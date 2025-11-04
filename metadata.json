@@ -1,5 +1,6 @@
 {
-  "name": "CryptoSim: Virtual Bitcoin Trading Platform",
-  "description": "A web application that simulates a real Bitcoin (BTC) trading environment. Users can use virtual funds to practice buying and selling BTC, with real-time price data and historical trend charts.",
-  "requestFramePermissions": []
+  "note": "This file is not used in a Next.js project. App metadata is managed in src/app/layout.tsx",
+  "requestFramePermissions": [],
+  "name": "",
+  "description": ""
 }
