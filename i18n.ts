@@ -1,4 +1,5 @@
 
+
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
@@ -9,6 +10,8 @@ const resources = {
       header: {
         title: "CryptoSim",
         welcome: "Welcome, Trader!",
+        homeLink: "CryptoSim homepage",
+        languageSwitcher: "Language switcher",
         tooltips: {
           switchToEn: "Switch to English",
           switchToZh: "Switch to Chinese"
@@ -130,6 +133,8 @@ const resources = {
       header: {
         title: "加密模拟",
         welcome: "欢迎，交易员！",
+        homeLink: "CryptoSim 首页",
+        languageSwitcher: "语言切换器",
         tooltips: {
           switchToEn: "切换到英语",
           switchToZh: "切换到中文"

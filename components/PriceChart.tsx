@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Brush } from 'recharts';
+import React from 'react';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useBitcoinPrice } from '../hooks/useBitcoinPrice';
 import Button from './ui/Button';
 import { useTranslation } from 'react-i18next';
@@ -83,40 +83,9 @@ const PriceChart: React.FC = () => {
   const { t } = useTranslation();
   const { historicalData, loading, error, timeRange, setTimeRange } = useBitcoinPrice();
 
-  const [xDomain, setXDomain] = useState<[number | 'dataMin', number | 'dataMax']>(['dataMin', 'dataMax']);
-  const [yDomain, setYDomain] = useState<[number | 'auto', number | 'auto']>(['auto', 'auto']);
-
   // For high-frequency data (1m), a 'step' chart provides a more accurate,
   // raw visualization. For lower-frequency k-lines, 'linear' shows trends better.
   const lineType = timeRange === '1m' ? 'step' : 'linear';
-
-  useEffect(() => {
-    resetZoom();
-  }, [historicalData]);
-
-  const handleBrushChange = (range: { startIndex?: number; endIndex?: number }) => {
-    if (historicalData && range.startIndex !== undefined && range.endIndex !== undefined) {
-      const newXDomain: [number, number] = [
-        historicalData[range.startIndex].timestamp,
-        historicalData[range.endIndex].timestamp
-      ];
-      setXDomain(newXDomain);
-      
-      const visibleData = historicalData.slice(range.startIndex, range.endIndex + 1);
-      if (visibleData.length > 0) {
-        const prices = visibleData.map(d => d.price);
-        const minY = Math.min(...prices);
-        const maxY = Math.max(...prices);
-        const padding = (maxY - minY) * 0.1; // 10% padding
-        setYDomain([Math.max(0, minY - padding), maxY + padding]);
-      }
-    }
-  };
-
-  const resetZoom = () => {
-    setXDomain(['dataMin', 'dataMax']);
-    setYDomain(['auto', 'auto']);
-  };
 
   const formatXAxisTick = (tick: number) => {
     const date = new Date(tick);
@@ -141,21 +110,12 @@ const PriceChart: React.FC = () => {
     { label: '1M', id: '30d' },
   ];
   
-  const isZoomed = xDomain[0] !== 'dataMin' || xDomain[1] !== 'dataMax';
-
   if (loading) return <div className="flex justify-center items-center h-96 text-gray-400">{t('priceChart.loading')}</div>;
   if (error) return <div className="flex justify-center items-center h-96 text-red-500">{error}</div>;
 
   return (
     <div>
-      <div className="flex flex-wrap justify-between items-center mb-4 px-4 md:px-6">
-        <div className="w-full sm:w-auto flex justify-start">
-          {isZoomed && (
-            <Button onClick={resetZoom} variant="ghost" className="text-sm px-3 py-1">
-              {t('priceChart.resetZoom')}
-            </Button>
-          )}
-        </div>
+      <div className="flex flex-wrap justify-end items-center mb-4 px-4 md:px-6">
         <div className="w-full sm:w-auto flex flex-wrap justify-center sm:justify-end gap-2 mt-2 sm:mt-0">
             {timeRanges.map(range => (
                 <Button 
@@ -175,7 +135,7 @@ const PriceChart: React.FC = () => {
         </div>
       </div>
       
-      {/* Main Chart (Zoomed View) */}
+      {/* Main Chart */}
       <div className="w-full h-[220px] md:h-[280px]">
         <ResponsiveContainer>
           <AreaChart data={historicalData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
@@ -189,16 +149,14 @@ const PriceChart: React.FC = () => {
             <XAxis 
               dataKey="timestamp" 
               type="number"
-              domain={xDomain}
-              allowDataOverflow
+              domain={['dataMin', 'dataMax']}
               tickFormatter={formatXAxisTick}
               stroke="hsl(var(--muted-foreground))"
             />
             <YAxis 
               tickFormatter={(price) => `$${price.toLocaleString()}`}
               stroke="hsl(var(--muted-foreground))"
-              domain={yDomain}
-              allowDataOverflow
+              domain={['auto', 'auto']}
               width={80} // Give Y-Axis ample space
             />
             <Tooltip 
@@ -219,27 +177,6 @@ const PriceChart: React.FC = () => {
         </ResponsiveContainer>
       </div>
 
-      {/* Context Chart (Brush View) - Hidden on mobile */}
-      <div className="w-full h-[70px] mt-4 hidden md:block">
-        <ResponsiveContainer>
-          <AreaChart data={historicalData}>
-            <XAxis dataKey="timestamp" tick={false} axisLine={false} hide/>
-            <YAxis domain={['dataMin', 'dataMax']} tick={false} axisLine={false} hide/>
-            <Area isAnimationActive={false} type={lineType} dataKey='price' stroke='hsl(var(--muted-foreground))' fill='hsl(var(--muted-foreground))' fillOpacity={0.2} dot={false} />
-            <Brush
-              dataKey="timestamp"
-              stroke="hsl(var(--brand-blue-hsl))"
-              fill="hsla(var(--brand-blue-hsl), 0.2)"
-              startIndex={0}
-              endIndex={historicalData.length > 0 ? historicalData.length - 1 : 0}
-              onChange={handleBrushChange}
-              tickFormatter={formatXAxisTick}
-              height={40}
-              y={15}
-            />
-          </AreaChart>
-        </ResponsiveContainer>
-      </div>
     </div>
   );
 };
