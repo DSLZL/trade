@@ -14,6 +14,10 @@ const resources = {
         userProfile: "User profile",
         login: "Login",
         logout: "Logout",
+        nav: {
+            dashboard: "Dashboard",
+            history: "History"
+        },
         tooltips: {
           switchToEn: "Switch to English",
           switchToZh: "Switch to Chinese"
@@ -81,9 +85,19 @@ const resources = {
       transactionHistory: {
         title: "Transaction History",
         noTransactions: "No transactions yet.",
+        noMatch: "No transactions match your filters.",
         type: "Type",
         amount: "Amount",
         value: "Value",
+        filters: {
+          type: "Type",
+          all: "All",
+          buy: "Buy",
+          sell: "Sell",
+          startDate: "Start Date",
+          endDate: "End Date",
+          clear: "Clear"
+        },
         tooltips: {
             viewDetails: "Click to view transaction details"
         }
@@ -141,6 +155,10 @@ const resources = {
         userProfile: "用户资料",
         login: "登录",
         logout: "登出",
+        nav: {
+            dashboard: "仪表盘",
+            history: "交易历史"
+        },
         tooltips: {
           switchToEn: "切换到英语",
           switchToZh: "切换到中文"
@@ -208,9 +226,19 @@ const resources = {
       transactionHistory: {
         title: "交易历史",
         noTransactions: "暂无交易记录。",
+        noMatch: "没有符合筛选条件的交易。",
         type: "类型",
         amount: "数量",
         value: "价值",
+        filters: {
+          type: "类型",
+          all: "全部",
+          buy: "买入",
+          sell: "卖出",
+          startDate: "开始日期",
+          endDate: "结束日期",
+          clear: "清除"
+        },
         tooltips: {
             viewDetails: "点击查看交易详情"
         }

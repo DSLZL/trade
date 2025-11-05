@@ -1,4 +1,5 @@
 
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/Card';
 import Button from './ui/Button';
@@ -11,6 +12,7 @@ import PriceChange from './PriceChange';
 import { useTranslation } from 'react-i18next';
 import { Tooltip } from './ui/Tooltip';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/Dialog';
+import { cn } from '../lib/utils';
 
 interface TradeDetails {
     mode: 'buy' | 'sell';
@@ -115,21 +117,27 @@ const TradePanel: React.FC = () => {
             </Tooltip>
             </div>
         </div>
-        <div className="space-y-1 rounded-md border border-border bg-muted/20 py-4 text-center">
+        <div className="space-y-1 rounded-lg border border-border/50 bg-background/50 py-4 text-center transition-all duration-300">
             <p className="text-sm text-muted-foreground">
             {mode === 'buy' ? t('tradePanel.youWillGet') : t('tradePanel.youWillReceive')}:
             </p>
-            <p className="text-lg font-bold text-foreground">
+            <p className="text-2xl font-bold text-primary">
             {formatCalculatedValue(calculatedValue)}
             </p>
         </div>
         <Tooltip text={tradeTooltipText} wrapperClassName="w-full">
             <span className="block w-full"> {/* Wrapper needed for tooltip on disabled button */}
-                <Button 
+                <Button
                     onClick={initiateTrade}
-                    className="w-full text-lg"
+                    className={cn(
+                        "w-full text-lg transition-transform duration-200 ease-in-out hover:scale-[1.02] active:scale-[0.98]",
+                        // Override background colors for a clear buy/sell indication
+                        mode === 'buy' && !insufficientFunds && "bg-brand-green text-white hover:bg-brand-green/90",
+                        mode === 'sell' && !insufficientFunds && "bg-brand-red text-white hover:bg-brand-red/90"
+                    )}
                     disabled={isTradeDisabled}
-                    variant={insufficientFunds ? "secondary" : (mode === 'buy' ? 'default' : 'destructive')}
+                    // We set a base variant, which gets overridden by className for buy/sell actions
+                    variant={insufficientFunds ? "secondary" : "default"}
                 >
                     {insufficientFunds ? t('tradePanel.insufficientFunds') : (mode === 'buy' ? t('tradePanel.buyBtc') : t('tradePanel.sellBtc'))}
                 </Button>
@@ -216,8 +224,18 @@ const TradePanel: React.FC = () => {
           <div className="mt-6 border-t pt-6">
             <Tabs defaultValue="buy" onValueChange={(value) => { setActiveTab(value); setAmount(''); }} className="w-full">
               <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="buy">{t('tradePanel.buyTab')}</TabsTrigger>
-                <TabsTrigger value="sell">{t('tradePanel.sellTab')}</TabsTrigger>
+                <TabsTrigger 
+                    value="buy"
+                    className="data-[state=active]:bg-brand-green/10 data-[state=active]:text-brand-green data-[state=active]:shadow-inner"
+                >
+                    {t('tradePanel.buyTab')}
+                </TabsTrigger>
+                <TabsTrigger 
+                    value="sell"
+                    className="data-[state=active]:bg-brand-red/10 data-[state=active]:text-brand-red data-[state=active]:shadow-inner"
+                >
+                    {t('tradePanel.sellTab')}
+                </TabsTrigger>
               </TabsList>
               <TabsContent value="buy">
                 {renderTradeForm('buy')}

@@ -7,11 +7,11 @@ import { AuthProvider } from './hooks/useAuth';
 import Header from './components/Header';
 import Dashboard from './components/Dashboard';
 import TradePanel from './components/TradePanel';
-import TransactionHistory from './components/TransactionHistory';
 import ErrorBoundary from './components/ErrorBoundary';
 import { Toast } from './components/ui/Toast';
 import LiveTradeFeed from './components/LiveTradeFeed';
 import AuthCallback from './components/AuthCallback';
+import TransactionHistoryPage from './components/TransactionHistoryPage';
 
 const ToastManager: React.FC = () => {
     const { notification, clearNotification } = usePortfolio();
@@ -46,7 +46,6 @@ const ToastManager: React.FC = () => {
 const MainApp: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col">
-      <ToastManager />
       <Header />
       <main className="flex-1 container mx-auto p-2 sm:p-4 md:p-6 lg:p-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
@@ -62,9 +61,6 @@ const MainApp: React.FC = () => {
 
           {/* Right Column (or bottom on mobile) */}
           <div className="lg:col-span-1 space-y-6">
-              <ErrorBoundary fallbackMessage="Could not load your transaction history.">
-                <TransactionHistory />
-              </ErrorBoundary>
               <ErrorBoundary fallbackMessage="Could not load the live trade feed.">
                 <LiveTradeFeed />
               </ErrorBoundary>
@@ -78,8 +74,12 @@ const MainApp: React.FC = () => {
 const App: React.FC = () => {
   const renderContent = () => {
     // Simple routing based on path
-    if (window.location.pathname === '/auth/callback') {
+    const path = window.location.pathname;
+    if (path === '/auth/callback') {
       return <AuthCallback />;
+    }
+    if (path === '/history') {
+        return <TransactionHistoryPage />;
     }
     return <MainApp />;
   };
@@ -88,6 +88,7 @@ const App: React.FC = () => {
     <PriceProvider>
       <PortfolioProvider>
         <AuthProvider>
+          <ToastManager />
           {renderContent()}
         </AuthProvider>
       </PortfolioProvider>

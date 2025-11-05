@@ -4,11 +4,13 @@ import { useTranslation } from 'react-i18next';
 import Button from './ui/Button';
 import { Tooltip } from './ui/Tooltip';
 import { useAuth } from '../hooks/useAuth';
+import { cn } from '../lib/utils';
 
 const Header: React.FC = () => {
   const { t, i18n } = useTranslation();
   const { user, login, logout, isLoading } = useAuth();
   const currentLanguage = i18n.language;
+  const currentPath = window.location.pathname;
 
   const changeLanguage = (lang: 'en' | 'zh-CN') => {
     i18n.changeLanguage(lang);
@@ -17,7 +19,7 @@ const Header: React.FC = () => {
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-background">
       <div className="container flex h-16 items-center space-x-4 sm:justify-between sm:space-x-0">
-        <div className="flex gap-6 md:gap-10">
+        <div className="flex items-center gap-6 md:gap-10">
            <a href="/" aria-label={t('header.homeLink')} className="flex items-center space-x-2">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-primary" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" focusable="false">
                 <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.5 2.5 0 00-.567-.267z" />
@@ -26,6 +28,15 @@ const Header: React.FC = () => {
             </svg>
             <span className="inline-block font-bold">{t('header.title')}</span>
           </a>
+          {/* Main Navigation */}
+          <nav className="hidden md:flex gap-6">
+            <a href="/" className={cn("text-sm font-medium transition-colors hover:text-primary", currentPath === '/' ? 'text-primary' : 'text-muted-foreground')}>
+              {t('header.nav.dashboard')}
+            </a>
+            <a href="/history" className={cn("text-sm font-medium transition-colors hover:text-primary", currentPath === '/history' ? 'text-primary' : 'text-muted-foreground')}>
+              {t('header.nav.history')}
+            </a>
+          </nav>
         </div>
 
         <div className="flex flex-1 items-center justify-end space-x-4">

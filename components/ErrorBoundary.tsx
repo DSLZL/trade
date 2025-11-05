@@ -27,9 +27,9 @@ class ErrorBoundary extends Component<Props, State> {
   }
 
   public render() {
-    // FIX: Destructure props to avoid potential 'this' context issues with some type checkers.
-    const { fallbackMessage, children } = this.props;
-    
+    // FIX: Destructuring props to resolve an issue where 'this.props' was not being correctly typed.
+    const { children, fallbackMessage } = this.props;
+
     if (this.state.hasError) {
       const t = i18n.t; // Use i18n instance directly in class component
       return (
