@@ -1,5 +1,3 @@
-
-
 import React, { useState, createContext, useContext, useCallback, ReactNode, useMemo, useEffect, useRef } from 'react';
 import { Portfolio, Transaction, TransactionType } from '../types';
 import { INITIAL_USD_BALANCE } from '../constants';
@@ -24,7 +22,8 @@ interface PortfolioContextType {
 
 const PortfolioContext = createContext<PortfolioContextType | undefined>(undefined);
 
-export const PortfolioProvider = ({ children }: { children: ReactNode }) => {
+// FIX: Changed component signature to use React.FC to fix typing issue in App.tsx
+export const PortfolioProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [portfolio, setPortfolio] = useState<Portfolio>({
     usdBalance: INITIAL_USD_BALANCE,
     btcBalance: 0,

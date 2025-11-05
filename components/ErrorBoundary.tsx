@@ -27,6 +27,9 @@ class ErrorBoundary extends Component<Props, State> {
   }
 
   public render() {
+    // FIX: Destructure props to avoid potential 'this' context issues with some type checkers.
+    const { fallbackMessage, children } = this.props;
+    
     if (this.state.hasError) {
       const t = i18n.t; // Use i18n instance directly in class component
       return (
@@ -36,14 +39,14 @@ class ErrorBoundary extends Component<Props, State> {
           </CardHeader>
           <CardContent>
             <p className="text-destructive-foreground">
-              {this.props.fallbackMessage || t('errorBoundary.message')}
+              {fallbackMessage || t('errorBoundary.message')}
             </p>
           </CardContent>
         </Card>
       );
     }
 
-    return this.props.children;
+    return children;
   }
 }
 

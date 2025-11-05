@@ -110,9 +110,6 @@ const PriceChart: React.FC = () => {
     { label: '1M', id: '30d' },
   ];
   
-  if (loading) return <div className="flex justify-center items-center h-96 text-gray-400">{t('priceChart.loading')}</div>;
-  if (error) return <div className="flex justify-center items-center h-96 text-red-500">{error}</div>;
-
   return (
     <div>
       <div className="flex flex-wrap justify-end items-center mb-4 px-4 md:px-6">
@@ -137,44 +134,50 @@ const PriceChart: React.FC = () => {
       
       {/* Main Chart */}
       <div className="w-full h-[220px] md:h-[280px]">
-        <ResponsiveContainer>
-          <AreaChart data={historicalData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
-            <defs>
-                <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="hsl(var(--brand-blue-hsl))" stopOpacity={0.4}/>
-                    <stop offset="95%" stopColor="hsl(var(--brand-blue-hsl))" stopOpacity={0}/>
-                </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-            <XAxis 
-              dataKey="timestamp" 
-              type="number"
-              domain={['dataMin', 'dataMax']}
-              tickFormatter={formatXAxisTick}
-              stroke="hsl(var(--muted-foreground))"
-            />
-            <YAxis 
-              tickFormatter={(price) => `$${price.toLocaleString()}`}
-              stroke="hsl(var(--muted-foreground))"
-              domain={['auto', 'auto']}
-              width={80} // Give Y-Axis ample space
-            />
-            <Tooltip 
-              content={<CustomTooltip />} 
-              isAnimationActive={false}
-            />
-            <Area 
-              isAnimationActive={false}
-              type={lineType} 
-              dataKey="price" 
-              stroke="hsl(var(--brand-blue-hsl))" 
-              strokeWidth={2} 
-              fill="url(#chartGradient)"
-              dot={false}
-              activeDot={{ r: 5, strokeWidth: 1, fill: 'hsl(var(--brand-blue-hsl))', stroke: 'hsl(var(--foreground))' }}
-            />
-          </AreaChart>
-        </ResponsiveContainer>
+        {loading ? (
+          <div className="flex justify-center items-center h-full text-gray-400">{t('priceChart.loading')}</div>
+        ) : error ? (
+          <div className="flex justify-center items-center h-full text-red-500">{error}</div>
+        ) : (
+          <ResponsiveContainer>
+            <AreaChart data={historicalData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+              <defs>
+                  <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="hsl(var(--brand-blue-hsl))" stopOpacity={0.4}/>
+                      <stop offset="95%" stopColor="hsl(var(--brand-blue-hsl))" stopOpacity={0}/>
+                  </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <XAxis 
+                dataKey="timestamp" 
+                type="number"
+                domain={['dataMin', 'dataMax']}
+                tickFormatter={formatXAxisTick}
+                stroke="hsl(var(--muted-foreground))"
+              />
+              <YAxis 
+                tickFormatter={(price) => `$${price.toLocaleString()}`}
+                stroke="hsl(var(--muted-foreground))"
+                domain={['auto', 'auto']}
+                width={80} // Give Y-Axis ample space
+              />
+              <Tooltip 
+                content={<CustomTooltip />} 
+                isAnimationActive={false}
+              />
+              <Area 
+                isAnimationActive={false}
+                type={lineType} 
+                dataKey="price" 
+                stroke="hsl(var(--brand-blue-hsl))" 
+                strokeWidth={2} 
+                fill="url(#chartGradient)"
+                dot={false}
+                activeDot={{ r: 5, strokeWidth: 1, fill: 'hsl(var(--brand-blue-hsl))', stroke: 'hsl(var(--foreground))' }}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        )}
       </div>
 
     </div>

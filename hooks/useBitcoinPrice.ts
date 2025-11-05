@@ -22,7 +22,8 @@ const PriceContext = createContext<PriceContextType | undefined>(undefined);
 
 const MAX_LIVE_TRADES = 20; // Number of trades to show in the live feed
 
-export const PriceProvider = ({ children }: { children: ReactNode }) => {
+// FIX: Changed component signature to use React.FC to fix typing issue in App.tsx
+export const PriceProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [currentPrice, setCurrentPrice] = useState<number | null>(null);
   const [historicalData, setHistoricalData] = useState<PriceDataPoint[]>([]);
   const [timeRange, setTimeRange] = useState<string>('7d');
