@@ -1,18 +1,22 @@
 
+
 import React, { useState, useEffect, createContext, useContext, useCallback, ReactNode, useMemo } from 'react';
 import { User } from '../types';
+import { OAUTH_AUTH_URL, OAUTH_CLIENT_ID, OAUTH_REDIRECT_URI, OAUTH_SCOPE } from '../constants';
+import { exchangeCodeForToken, fetchUserInfo } from '../services/authApi';
 
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   login: () => void;
   logout: () => void;
-  handleAuthCallback: () => void;
+  handleAuthCallback: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const AUTH_STORAGE_KEY = 'crypto-sim-user';
+const ACCESS_TOKEN_KEY = 'crypto-sim-access-token';
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -27,40 +31,79 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     } catch (error) {
       console.error('Failed to parse user from localStorage', error);
       localStorage.removeItem(AUTH_STORAGE_KEY);
+      localStorage.removeItem(ACCESS_TOKEN_KEY);
     }
     setIsLoading(false);
   }, []);
 
   const login = useCallback(() => {
-    // In a real app, this would redirect to your OAuth provider.
-    // Here, we'll just navigate to our callback page to simulate the redirect.
-    window.location.href = '/auth/callback';
+    if (!OAUTH_CLIENT_ID) {
+      alert("OAuth Client ID is not configured. Please check your environment variables.");
+      return;
+    }
+    const params = new URLSearchParams({
+      client_id: OAUTH_CLIENT_ID,
+      redirect_uri: OAUTH_REDIRECT_URI,
+      response_type: 'code',
+      scope: OAUTH_SCOPE,
+    });
+
+    window.location.href = `${OAUTH_AUTH_URL}?${params.toString()}`;
   }, []);
 
   const logout = useCallback(() => {
     setUser(null);
     localStorage.removeItem(AUTH_STORAGE_KEY);
+    localStorage.removeItem(ACCESS_TOKEN_KEY);
     // Redirect to home page to clear any state
     window.location.href = '/';
   }, []);
   
-  const handleAuthCallback = useCallback(() => {
-    // This is where you would handle the OAuth callback, e.g.,
-    // exchange a code for a token and fetch user info.
-    // For this simulation, we'll just create a mock user.
+  const handleAuthCallback = useCallback(async () => {
     setIsLoading(true);
-    setTimeout(() => {
-      const mockUser: User = {
-        name: 'Satoshi',
-        // A generic, creative avatar for the user
-        avatarUrl: `data:image/svg+xml;base64,${btoa('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><g fill="none" stroke-width="5"><path stroke="#F7931A" d="M50,5 a45,45 0 1,0 0,90 a45,45 0 1,0 0,-90" /><path stroke="#FFF" stroke-linecap="round" stroke-linejoin="round" d="M35 50 h30 M50 35 v30 M40 40 L60 60 M40 60 L60 40" /></g></svg>')}`,
-      };
-      setUser(mockUser);
-      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(mockUser));
-      setIsLoading(false);
-      // Redirect back to the main application
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('code');
+
+    if (!code) {
+      console.error("Authorization code not found in callback URL.");
+      alert("Authentication failed: Authorization code not found.");
       window.location.href = '/';
-    }, 1500); // Simulate network request
+      return;
+    }
+
+    try {
+      // Step 1: Exchange authorization code for an access token
+      const tokenData = await exchangeCodeForToken(code);
+      const accessToken = tokenData.access_token;
+      
+      if (!accessToken) {
+        throw new Error("Access token not found in the response.");
+      }
+      
+      // Store the access token securely (localStorage for this demo)
+      localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
+
+      // Step 2: Use the access token to fetch user information
+      const userInfo = await fetchUserInfo(accessToken);
+
+      // Step 3: Create user object and update state
+      const authenticatedUser: User = {
+        name: userInfo.name,
+        avatarUrl: userInfo.picture,
+      };
+      
+      setUser(authenticatedUser);
+      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(authenticatedUser));
+
+    } catch (error) {
+      console.error("Authentication failed during token exchange or user info fetch:", error);
+      alert("An error occurred during login. Please try again.");
+      localStorage.removeItem(ACCESS_TOKEN_KEY); // Clean up on failure
+    } finally {
+      setIsLoading(false);
+      // Redirect back to the main application, cleaning the URL
+      window.location.href = '/';
+    }
   }, []);
 
   const value = useMemo(() => ({

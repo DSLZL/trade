@@ -1,4 +1,5 @@
 
+
 import React, { useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useTranslation } from 'react-i18next';
@@ -8,6 +9,8 @@ const AuthCallback: React.FC = () => {
   const { t } = useTranslation();
 
   useEffect(() => {
+    // We don't need to await this, as it handles its own state
+    // and redirects when complete.
     handleAuthCallback();
   }, [handleAuthCallback]);
 

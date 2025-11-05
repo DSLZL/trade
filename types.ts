@@ -1,4 +1,5 @@
 
+
 export interface User {
   name: string;
   avatarUrl: string;
@@ -88,4 +89,21 @@ export interface WebSocketTradePayload {
   T: number; // Trade time
   m: boolean; // Is the buyer the market maker?
   M: boolean; // Ignore
+}
+
+// --- OAuth2 Types ---
+export interface TokenResponse {
+  access_token: string;
+  token_type: string;
+  expires_in: number;
+  scope: string;
+}
+
+export interface UserInfoResponse {
+  sub: string;
+  name: string;
+  username: string;
+  picture: string; // This will be the URL for the avatar
+  email: string;
+  email_verified: boolean;
 }
