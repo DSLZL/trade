@@ -1,6 +1,8 @@
+
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import Button from './ui/Button';
+import { Tooltip } from './ui/Tooltip';
 
 const Header: React.FC = () => {
   const { t, i18n } = useTranslation();
@@ -26,20 +28,24 @@ const Header: React.FC = () => {
 
         <div className="flex flex-1 items-center justify-end space-x-4">
           <nav className="flex items-center space-x-1">
-            <Button
-              variant={currentLanguage === 'zh-CN' ? 'secondary' : 'ghost'}
-              size="sm"
-              onClick={() => changeLanguage('zh-CN')}
-            >
-              {t('languages.zh')}
-            </Button>
-            <Button
-              variant={currentLanguage.startsWith('en') ? 'secondary' : 'ghost'}
-              size="sm"
-              onClick={() => changeLanguage('en')}
-            >
-              {t('languages.en')}
-            </Button>
+            <Tooltip text={t('header.tooltips.switchToZh')}>
+              <Button
+                variant={currentLanguage === 'zh-CN' ? 'secondary' : 'ghost'}
+                size="sm"
+                onClick={() => changeLanguage('zh-CN')}
+              >
+                {t('languages.zh')}
+              </Button>
+            </Tooltip>
+            <Tooltip text={t('header.tooltips.switchToEn')}>
+              <Button
+                variant={currentLanguage.startsWith('en') ? 'secondary' : 'ghost'}
+                size="sm"
+                onClick={() => changeLanguage('en')}
+              >
+                {t('languages.en')}
+              </Button>
+            </Tooltip>
           </nav>
         </div>
       </div>

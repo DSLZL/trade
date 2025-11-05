@@ -1,12 +1,25 @@
+
+
 import React, { useState, createContext, useContext, useCallback, ReactNode, useMemo, useEffect, useRef } from 'react';
 import { Portfolio, Transaction, TransactionType } from '../types';
 import { INITIAL_USD_BALANCE } from '../constants';
 import { getPortfolio, savePortfolio } from '../services/db';
 
+interface Notification {
+  messageKey: string;
+  // Fix: Changed payload type from `object` to `Record<string, any>`.
+  // The `i18next` `t` function requires an object with a string index signature for interpolation.
+  // The generic `object` type does not have this, which was causing a TypeScript error.
+  payload?: Record<string, any>;
+  type: 'success' | 'error';
+}
+
 interface PortfolioContextType {
   portfolio: Portfolio;
   buyBtc: (usdAmount: number, currentPrice: number) => void;
   sellBtc: (btcAmount: number, currentPrice: number) => void;
+  notification: Notification | null;
+  clearNotification: () => void;
 }
 
 const PortfolioContext = createContext<PortfolioContextType | undefined>(undefined);
@@ -17,6 +30,7 @@ export const PortfolioProvider = ({ children }: { children: ReactNode }) => {
     btcBalance: 0,
     transactions: [],
   });
+  const [notification, setNotification] = useState<Notification | null>(null);
 
   const hasLoaded = useRef(false);
 
@@ -57,6 +71,9 @@ export const PortfolioProvider = ({ children }: { children: ReactNode }) => {
     });
   }, [portfolio]);
 
+  const clearNotification = useCallback(() => {
+    setNotification(null);
+  }, []);
 
   const buyBtc = useCallback((usdAmount: number, currentPrice: number) => {
     if (usdAmount <= 0) return;
@@ -64,8 +81,8 @@ export const PortfolioProvider = ({ children }: { children: ReactNode }) => {
     const btcToBuy = usdAmount / currentPrice;
     setPortfolio(prev => {
       if (prev.usdBalance < usdAmount) {
-        console.error("Attempted to buy with insufficient USD balance.");
-        return prev; // Return previous state if funds are insufficient
+        setNotification({ messageKey: 'notifications.insufficientUsd', type: 'error' });
+        return prev;
       }
 
       const newTransaction: Transaction = {
@@ -76,6 +93,12 @@ export const PortfolioProvider = ({ children }: { children: ReactNode }) => {
         usdAmount,
         priceAtTransaction: currentPrice,
       };
+
+      setNotification({
+        messageKey: 'notifications.buySuccess',
+        payload: { amount: btcToBuy.toFixed(8), currency: 'BTC' },
+        type: 'success',
+      });
 
       return {
         ...prev,
@@ -92,8 +115,8 @@ export const PortfolioProvider = ({ children }: { children: ReactNode }) => {
     const usdToGain = btcAmount * currentPrice;
     setPortfolio(prev => {
       if (prev.btcBalance < btcAmount) {
-        console.error("Attempted to sell with insufficient BTC balance.");
-        return prev; // Return previous state if funds are insufficient
+        setNotification({ messageKey: 'notifications.insufficientBtc', type: 'error' });
+        return prev;
       }
 
       const newTransaction: Transaction = {
@@ -105,6 +128,12 @@ export const PortfolioProvider = ({ children }: { children: ReactNode }) => {
         priceAtTransaction: currentPrice,
       };
 
+      setNotification({
+        messageKey: 'notifications.sellSuccess',
+        payload: { amount: btcAmount.toFixed(8), currency: 'BTC' },
+        type: 'success',
+      });
+
       return {
         ...prev,
         btcBalance: prev.btcBalance - btcAmount,
@@ -114,7 +143,7 @@ export const PortfolioProvider = ({ children }: { children: ReactNode }) => {
     });
   }, []);
 
-  const value = useMemo(() => ({ portfolio, buyBtc, sellBtc }), [portfolio, buyBtc, sellBtc]);
+  const value = useMemo(() => ({ portfolio, buyBtc, sellBtc, notification, clearNotification }), [portfolio, buyBtc, sellBtc, notification, clearNotification]);
 
   // Note: Using React.createElement is necessary here because this is a .ts file,
   // not a .tsx file, and therefore does not support JSX syntax.

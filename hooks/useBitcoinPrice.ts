@@ -1,10 +1,14 @@
-import React, { useState, useEffect, createContext, useContext, useCallback, ReactNode, useMemo } from 'react';
-import { fetchCurrentPrice, fetchHistoricalData } from '../services/cryptoApi';
-import { PriceDataPoint } from '../types';
+import React, { useState, useEffect, createContext, useContext, useCallback, ReactNode, useMemo, useRef } from 'react';
+import { fetchHistoricalData } from '../services/cryptoApi';
+import { PriceDataPoint, WebSocketTradePayload, LiveTrade } from '../types';
+
+type WebSocketStatus = 'connecting' | 'connected' | 'disconnected';
 
 interface PriceContextType {
   currentPrice: number | null;
   historicalData: PriceDataPoint[];
+  liveTrades: LiveTrade[];
+  wsStatus: WebSocketStatus;
   timeRange: string;
   setTimeRange: (range: string) => void;
   loading: boolean;
@@ -16,6 +20,8 @@ interface PriceContextType {
 
 const PriceContext = createContext<PriceContextType | undefined>(undefined);
 
+const MAX_LIVE_TRADES = 20; // Number of trades to show in the live feed
+
 export const PriceProvider = ({ children }: { children: ReactNode }) => {
   const [currentPrice, setCurrentPrice] = useState<number | null>(null);
   const [historicalData, setHistoricalData] = useState<PriceDataPoint[]>([]);
@@ -25,6 +31,13 @@ export const PriceProvider = ({ children }: { children: ReactNode }) => {
   const [openPrice24h, setOpenPrice24h] = useState<number | null>(null);
   const [priceChange24h, setPriceChange24h] = useState<number | null>(null);
   const [priceChangePercent24h, setPriceChangePercent24h] = useState<number | null>(null);
+  
+  // State for live data shared across components
+  const [liveTrades, setLiveTrades] = useState<LiveTrade[]>([]);
+  const [wsStatus, setWsStatus] = useState<WebSocketStatus>('connecting');
+
+  // Ref to buffer incoming high-frequency trade data for the 1m chart
+  const tradesBufferRef = useRef<PriceDataPoint[]>([]);
 
   const getHistoricalData = useCallback(async (range: string) => {
     setLoading(true);
@@ -40,25 +53,88 @@ export const PriceProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
-  const getCurrentPrice = useCallback(async () => {
-    try {
-      const price = await fetchCurrentPrice();
-      setCurrentPrice(price);
-    } catch (err) {
-      // Don't overwrite a more critical historical data error with a price poll error.
-      if (!historicalData.length) {
-        setError('Failed to fetch current price.');
-      }
-      console.error(err);
-    }
-  }, [historicalData.length]);
-
+  // Effect to manage the single, persistent WebSocket connection for the app's lifetime.
+  // This provides real-time data for the current price and the live trade feed.
   useEffect(() => {
-    const fetchInitialData = async () => {
-        await getCurrentPrice();
-        await getHistoricalData(timeRange);
+    const ws = new WebSocket('wss://stream.binance.com:9443/ws/btcusdt@trade');
 
-        // Fetch 24h data specifically for price change calculation
+    ws.onopen = () => setWsStatus('connected');
+    ws.onclose = () => setWsStatus('disconnected');
+    ws.onerror = (event) => {
+      console.error("Shared WebSocket Error. See browser console for details.", event);
+      setWsStatus('disconnected');
+    };
+
+    ws.onmessage = (event) => {
+      const message: WebSocketTradePayload = JSON.parse(event.data);
+      const price = parseFloat(message.p);
+      
+      // 1. Update current price for all components
+      setCurrentPrice(price);
+      
+      // 2. Add to the 1m chart buffer
+      tradesBufferRef.current.push({
+        timestamp: message.T,
+        price: price,
+        isLive: true,
+      });
+
+      // 3. Update the live trade feed
+      const newTrade: LiveTrade = {
+        id: message.t,
+        price: price,
+        amount: parseFloat(message.q),
+        time: message.T,
+        isBuyerMaker: message.m,
+      };
+      setLiveTrades(prev => [newTrade, ...prev.slice(0, MAX_LIVE_TRADES - 1)]);
+    };
+
+    return () => {
+      ws.close();
+    };
+  }, []); // Run only once on mount
+
+  // Effect to handle fetching and updating chart data based on the selected timeRange.
+  useEffect(() => {
+    let dataUpdateInterval: number | undefined;
+
+    if (timeRange === '1m') {
+      // For 1m, first get the initial dataset, then start the interval to append live data.
+      getHistoricalData('1m');
+      
+      dataUpdateInterval = window.setInterval(() => {
+        if (tradesBufferRef.current.length === 0) return;
+
+        const newTrades = tradesBufferRef.current;
+        tradesBufferRef.current = []; // Clear buffer for next batch
+
+        setHistoricalData(prevData => {
+          const combinedData = [...prevData, ...newTrades];
+          const oneMinuteAgo = Date.now() - 60 * 1000;
+          
+          // OPTIMIZATION: Instead of filtering the whole array, find the first valid index
+          // and slice from there. This is vastly more performant on large arrays.
+          const firstValidIndex = combinedData.findIndex(p => p.timestamp >= oneMinuteAgo);
+          
+          return firstValidIndex === -1 ? [] : combinedData.slice(firstValidIndex);
+        });
+      }, 500);
+
+    } else {
+      // For all other ranges, just fetch the historical data once.
+      getHistoricalData(timeRange);
+    }
+
+    return () => {
+      clearInterval(dataUpdateInterval);
+    };
+  }, [timeRange, getHistoricalData]);
+
+
+  // Effect to fetch 24h open price once on mount
+  useEffect(() => {
+    const fetch24hOpen = async () => {
         try {
             const dailyData = await fetchHistoricalData('1d');
             if(dailyData.length > 0 && dailyData[0].open !== undefined) {
@@ -68,87 +144,10 @@ export const PriceProvider = ({ children }: { children: ReactNode }) => {
             console.error("Failed to fetch 24h open price:", err);
         }
     };
-    
-    fetchInitialData();
+    fetch24hOpen();
+  }, []); // Only run on mount
 
-    // Set up polling for current price. A 2-second interval provides a near
-    // real-time feel without hitting API rate limits, which a 1-second
-    // interval might risk with a standard REST API.
-    const intervalId = setInterval(getCurrentPrice, 2000); // Poll every 2 seconds
-
-    return () => clearInterval(intervalId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    // This effect handles fetching data when the time range changes, and also
-    // sets up a periodic refresh for the '10m' real-time chart.
-    getHistoricalData(timeRange);
-
-    let intervalId: number | undefined;
-
-    // If the user selects the 10m real-time view, we need to periodically
-    // refresh the dense trade data to create a rolling window effect.
-    if (timeRange === '10m') {
-      // Refresh the historical trade data every 30 seconds.
-      intervalId = window.setInterval(() => {
-        // We only want to refresh the background data, not show a loading spinner,
-        // so we call the fetch function directly without setting the loading state.
-        fetchHistoricalData('10m')
-          .then(formattedData => {
-            // To prevent the live tick from disappearing during a refresh,
-            // we find it in the previous state and append it to the new data.
-            setHistoricalData(prevData => {
-              const liveTick = prevData.find(p => p.isLive);
-              return liveTick ? [...formattedData, liveTick] : formattedData;
-            });
-          })
-          .catch(err => {
-            // Silently handle the error or show a non-intrusive message
-            console.error("Failed to auto-refresh 10m trade data:", err);
-          });
-      }, 30000); // 30 seconds
-    }
-
-    // Cleanup function to clear the interval when the component unmounts
-    // or when the timeRange changes, preventing memory leaks and unwanted polling.
-    return () => {
-      if (intervalId) {
-        clearInterval(intervalId);
-      }
-    };
-  }, [timeRange, getHistoricalData]);
-
-  useEffect(() => {
-    // This effect handles the "live" update for the 10-minute chart.
-    // It appends the latest real-time price tick to the historical data.
-    if (timeRange === '10m' && currentPrice !== null && historicalData.length > 0) {
-        setHistoricalData(prevData => {
-            const lastPoint = prevData[prevData.length - 1];
-            const newPoint: PriceDataPoint = {
-                timestamp: Date.now(),
-                price: currentPrice,
-                isLive: true,
-            };
-
-            // Check if the last point is a live one using our new flag.
-            if (lastPoint.isLive) {
-                // If the last point was a live one, replace it with the latest price tick.
-                // This makes the end of the chart line move up and down in real-time.
-                const newData = [...prevData.slice(0, -1), newPoint];
-                return newData;
-            } else {
-                // If the last point was from the API, append the new live point.
-                // This starts the real-time drawing of the chart line.
-                return [...prevData, newPoint];
-            }
-        });
-    }
-    // We intentionally omit historicalData from deps to prevent infinite loops.
-    // The functional update to setHistoricalData ensures we have the latest state.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentPrice, timeRange]);
-
+  // Effect to calculate 24h price change
   useEffect(() => {
     if (currentPrice !== null && openPrice24h !== null) {
       const change = currentPrice - openPrice24h;
@@ -162,6 +161,8 @@ export const PriceProvider = ({ children }: { children: ReactNode }) => {
   const value = useMemo(() => ({
     currentPrice,
     historicalData,
+    liveTrades,
+    wsStatus,
     timeRange,
     setTimeRange,
     loading,
@@ -169,7 +170,7 @@ export const PriceProvider = ({ children }: { children: ReactNode }) => {
     openPrice24h,
     priceChange24h,
     priceChangePercent24h,
-  }), [currentPrice, historicalData, timeRange, loading, error, openPrice24h, priceChange24h, priceChangePercent24h]);
+  }), [currentPrice, historicalData, liveTrades, wsStatus, timeRange, loading, error, openPrice24h, priceChange24h, priceChangePercent24h]);
 
   return React.createElement(PriceContext.Provider, { value: value }, children);
 };

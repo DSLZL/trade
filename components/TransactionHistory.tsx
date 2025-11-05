@@ -1,32 +1,36 @@
+
 import React, { useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/Card';
 import { usePortfolio } from '../hooks/usePortfolio';
 import { Transaction, TransactionType } from '../types';
 import TransactionDetailModal from './TransactionDetailModal';
 import { useTranslation } from 'react-i18next';
+import { Tooltip } from './ui/Tooltip';
 
 const TransactionRow: React.FC<{ tx: Transaction; onClick: () => void }> = ({ tx, onClick }) => {
   const { t } = useTranslation();
   const isBuy = tx.type === TransactionType.BUY;
   return (
-    <div 
-      onClick={onClick}
-      className="grid grid-cols-3 gap-2 py-3 border-b border-border text-sm cursor-pointer hover:bg-accent transition-colors duration-150"
-    >
-      <div>
-        <span className={`font-semibold ${isBuy ? 'text-brand-green' : 'text-brand-red'}`}>
-          {isBuy ? t('common.buy') : t('common.sell')}
-        </span>
-        <p className="text-muted-foreground">{tx.date.toLocaleTimeString()}</p>
+    <Tooltip text={t('transactionHistory.tooltips.viewDetails')} position="left" wrapperClassName="w-full">
+      <div 
+        onClick={onClick}
+        className="grid grid-cols-3 gap-2 py-3 border-b border-border text-sm cursor-pointer hover:bg-accent transition-colors duration-150 w-full"
+      >
+        <div>
+          <span className={`font-semibold ${isBuy ? 'text-brand-green' : 'text-brand-red'}`}>
+            {isBuy ? t('common.buy') : t('common.sell')}
+          </span>
+          <p className="text-muted-foreground">{tx.date.toLocaleTimeString()}</p>
+        </div>
+        <div className="text-right">
+          <p className="font-mono">{tx.btcAmount.toFixed(6)} BTC</p>
+          <p className="text-muted-foreground">@ ${tx.priceAtTransaction.toLocaleString()}</p>
+        </div>
+        <div className="text-right font-semibold font-mono">
+          ${tx.usdAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+        </div>
       </div>
-      <div className="text-right">
-        <p className="font-mono">{tx.btcAmount.toFixed(6)} BTC</p>
-        <p className="text-muted-foreground">@ ${tx.priceAtTransaction.toLocaleString()}</p>
-      </div>
-      <div className="text-right font-semibold font-mono">
-        ${tx.usdAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-      </div>
-    </div>
+    </Tooltip>
   );
 };
 

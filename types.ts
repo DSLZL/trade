@@ -30,21 +30,28 @@ export interface PriceDataPoint {
   isLive?: boolean; // Flag for real-time price ticks
 }
 
+// Type for the live trade feed, shared between the hook and component
+export interface LiveTrade {
+    id: number;
+    price: number;
+    amount: number;
+    time: number;
+    isBuyerMaker: boolean;
+}
+
 // Type for Binance API /ticker/price endpoint response
 export interface BinanceTicker {
   symbol: string;
   price: string;
 }
 
-// Type for Binance API /trades endpoint response
-export interface BinanceTrade {
-  id: number;
-  price: string;
-  qty: string;
-  quoteQty: string;
-  time: number;
-  isBuyerMaker: boolean;
-  isBestMatch: boolean;
+// Type for Binance API /aggTrades endpoint response
+export interface BinanceAggTrade {
+  a: number; // Aggregate trade ID
+  p: string; // Price
+  q: string; // Quantity
+  T: number; // Timestamp
+  m: boolean; // Is the buyer the market maker?
 }
 
 // Type for a single data point from Binance API /klines endpoint
@@ -63,3 +70,18 @@ export type BinanceKline = [
   string, // Taker buy quote asset volume
   string  // Ignore
 ];
+
+// Type for Binance WebSocket /<symbol>@trade stream payload
+export interface WebSocketTradePayload {
+  e: string; // Event type
+  E: number; // Event time
+  s: string; // Symbol
+  t: number; // Trade ID
+  p: string; // Price
+  q: string; // Quantity
+  b: number; // Buyer order ID
+  a: number; // Seller order ID
+  T: number; // Trade time
+  m: boolean; // Is the buyer the market maker?
+  M: boolean; // Ignore
+}

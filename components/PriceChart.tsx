@@ -86,9 +86,9 @@ const PriceChart: React.FC = () => {
   const [xDomain, setXDomain] = useState<[number | 'dataMin', number | 'dataMax']>(['dataMin', 'dataMax']);
   const [yDomain, setYDomain] = useState<[number | 'auto', number | 'auto']>(['auto', 'auto']);
 
-  // For high-frequency data (10m), a 'step' chart provides a more accurate,
+  // For high-frequency data (1m), a 'step' chart provides a more accurate,
   // raw visualization. For lower-frequency k-lines, 'linear' shows trends better.
-  const lineType = timeRange === '10m' ? 'step' : 'linear';
+  const lineType = timeRange === '1m' ? 'step' : 'linear';
 
   useEffect(() => {
     resetZoom();
@@ -120,14 +120,19 @@ const PriceChart: React.FC = () => {
 
   const formatXAxisTick = (tick: number) => {
     const date = new Date(tick);
-    if (['10m', '30m', '1h', '12h', '1d'].includes(timeRange)) {
+    // For the 1m real-time chart, showing seconds is crucial to differentiate
+    // between the high-frequency data points.
+    if (timeRange === '1m') {
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    }
+    if (['30m', '1h', '12h', '1d'].includes(timeRange)) {
       return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     }
     return date.toLocaleDateString();
   };
 
   const timeRanges = [
-    { label: '10m', id: '10m' },
+    { label: '1m', id: '1m' },
     { label: '30m', id: '30m' },
     { label: '1H', id: '1h' },
     { label: '12H', id: '12h' },
@@ -201,6 +206,7 @@ const PriceChart: React.FC = () => {
               isAnimationActive={false}
             />
             <Area 
+              isAnimationActive={false}
               type={lineType} 
               dataKey="price" 
               stroke="hsl(var(--brand-blue-hsl))" 
@@ -219,7 +225,7 @@ const PriceChart: React.FC = () => {
           <AreaChart data={historicalData}>
             <XAxis dataKey="timestamp" tick={false} axisLine={false} hide/>
             <YAxis domain={['dataMin', 'dataMax']} tick={false} axisLine={false} hide/>
-            <Area type={lineType} dataKey='price' stroke='hsl(var(--muted-foreground))' fill='hsl(var(--muted-foreground))' fillOpacity={0.2} dot={false} />
+            <Area isAnimationActive={false} type={lineType} dataKey='price' stroke='hsl(var(--muted-foreground))' fill='hsl(var(--muted-foreground))' fillOpacity={0.2} dot={false} />
             <Brush
               dataKey="timestamp"
               stroke="hsl(var(--brand-blue-hsl))"

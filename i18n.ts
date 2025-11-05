@@ -1,3 +1,4 @@
+
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
@@ -7,7 +8,11 @@ const resources = {
     translation: {
       header: {
         title: "CryptoSim",
-        welcome: "Welcome, Trader!"
+        welcome: "Welcome, Trader!",
+        tooltips: {
+          switchToEn: "Switch to English",
+          switchToZh: "Switch to Chinese"
+        }
       },
       footer: {
         rights: "CryptoSim © 2024. All rights reserved.",
@@ -18,7 +23,12 @@ const resources = {
         totalValue: "Total Value",
         usdBalance: "USD Balance",
         btcHoldings: "Bitcoin Holdings",
-        loading: "Loading..."
+        loading: "Loading...",
+        tooltips: {
+          totalValue: "Your total portfolio value (USD Balance + BTC Holdings at current price).",
+          usdBalance: "Your available virtual cash for trading.",
+          btcHoldings: "The total amount of virtual Bitcoin you own."
+        }
       },
       tradePanel: {
         title: "Trade Bitcoin",
@@ -31,7 +41,21 @@ const resources = {
         youWillReceive: "You will receive",
         insufficientFunds: "Insufficient Funds",
         buyBtc: "Buy BTC",
-        sellBtc: "Sell BTC"
+        sellBtc: "Sell BTC",
+        tooltips: {
+            max: "Fill with your maximum available balance.",
+            amountInput: "Enter the amount you wish to trade.",
+            tradeDisabled: "Please enter a valid amount to trade.",
+            buyConfirm: "Review and confirm your BTC purchase.",
+            sellConfirm: "Review and confirm selling your BTC."
+        },
+        confirmation: {
+          title: "Confirm Your Order",
+          action: "Action",
+          price: "Price",
+          amount: "Amount",
+          total: "Total"
+        }
       },
       priceChart: {
         loading: "Loading Chart...",
@@ -54,7 +78,10 @@ const resources = {
         noTransactions: "No transactions yet.",
         type: "Type",
         amount: "Amount",
-        value: "Value"
+        value: "Value",
+        tooltips: {
+            viewDetails: "Click to view transaction details"
+        }
       },
       transactionDetailModal: {
         title: "Transaction Details",
@@ -66,13 +93,31 @@ const resources = {
         btcAmount: "BTC Amount",
         totalUsdValue: "Total USD Value"
       },
+      liveTradeFeed: {
+        title: "Live Market Trades",
+        price: "Price (USDT)",
+        amount: "Amount (BTC)",
+        time: "Time"
+      },
       errorBoundary: {
         title: "Oops! Something went wrong.",
         message: "We're having trouble loading this section. Please try refreshing the page."
       },
+      notifications: {
+        insufficientUsd: "Insufficient USD balance.",
+        insufficientBtc: "Insufficient BTC balance.",
+        buySuccess: "Successfully bought {{amount}} {{currency}}.",
+        sellSuccess: "Successfully sold {{amount}} {{currency}}."
+      },
       common: {
         buy: "Buy",
-        sell: "Sell"
+        sell: "Sell",
+        confirm: "Confirm",
+        cancel: "Cancel",
+        connected: "Connected",
+        disconnected: "Disconnected",
+        waitingForTrades: "Waiting for trades...",
+        connecting: "Connecting..."
       },
       languages: {
         en: "English",
@@ -84,7 +129,11 @@ const resources = {
     translation: {
       header: {
         title: "加密模拟",
-        welcome: "欢迎，交易员！"
+        welcome: "欢迎，交易员！",
+        tooltips: {
+          switchToEn: "切换到英语",
+          switchToZh: "切换到中文"
+        }
       },
       footer: {
         rights: "加密模拟 © 2024. 版权所有。",
@@ -95,7 +144,12 @@ const resources = {
         totalValue: "总价值",
         usdBalance: "美元余额",
         btcHoldings: "比特币持有量",
-        loading: "加载中..."
+        loading: "加载中...",
+        tooltips: {
+          totalValue: "您的总投资组合价值（美元余额 + 当前价格的比特币持有量）。",
+          usdBalance: "您可用于交易的虚拟现金余额。",
+          btcHoldings: "您拥有的虚拟比特币总量。"
+        }
       },
       tradePanel: {
         title: "交易比特币",
@@ -108,7 +162,21 @@ const resources = {
         youWillReceive: "你将收到",
         insufficientFunds: "资金不足",
         buyBtc: "买入 BTC",
-        sellBtc: "卖出 BTC"
+        sellBtc: "卖出 BTC",
+        tooltips: {
+            max: "填入您的全部可用余额。",
+            amountInput: "请输入您希望交易的金额。",
+            tradeDisabled: "请输入有效的交易金额。",
+            buyConfirm: "检查并确认您的比特币购买订单。",
+            sellConfirm: "检查并确认您的比特币卖出订单。"
+        },
+        confirmation: {
+          title: "确认您的订单",
+          action: "操作",
+          price: "价格",
+          amount: "数量",
+          total: "总计"
+        }
       },
       priceChart: {
         loading: "图表加载中...",
@@ -131,7 +199,10 @@ const resources = {
         noTransactions: "暂无交易记录。",
         type: "类型",
         amount: "数量",
-        value: "价值"
+        value: "价值",
+        tooltips: {
+            viewDetails: "点击查看交易详情"
+        }
       },
       transactionDetailModal: {
         title: "交易详情",
@@ -143,13 +214,31 @@ const resources = {
         btcAmount: "BTC 数量",
         totalUsdValue: "总价值 (USD)"
       },
+      liveTradeFeed: {
+        title: "实时市场交易",
+        price: "价格 (USDT)",
+        amount: "数量 (BTC)",
+        time: "时间"
+      },
       errorBoundary: {
         title: "哎呀！出错了。",
         message: "加载此部分时遇到问题。请尝试刷新页面。"
       },
+      notifications: {
+        insufficientUsd: "美元余额不足。",
+        insufficientBtc: "比特币余额不足。",
+        buySuccess: "成功买入 {{amount}} {{currency}}。",
+        sellSuccess: "成功卖出 {{amount}} {{currency}}。"
+      },
       common: {
         buy: "买入",
-        sell: "卖出"
+        sell: "卖出",
+        confirm: "确认",
+        cancel: "取消",
+        connected: "已连接",
+        disconnected: "已断开",
+        waitingForTrades: "等待交易...",
+        connecting: "连接中..."
       },
       languages: {
         en: "English",

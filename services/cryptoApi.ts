@@ -1,7 +1,7 @@
 
 
 import { API_BASE_URL, BITCOIN_ID } from '../constants';
-import { BinanceTicker, BinanceKline, PriceDataPoint, BinanceTrade } from '../types';
+import { BinanceTicker, BinanceKline, PriceDataPoint, BinanceAggTrade } from '../types';
 
 export const fetchCurrentPrice = async (): Promise<number> => {
   try {
@@ -18,32 +18,36 @@ export const fetchCurrentPrice = async (): Promise<number> => {
 };
 
 /**
- * Fetches high-resolution recent trades for the detailed real-time chart.
+ * Fetches aggregate trades within a specific time window using the /api/v3/aggTrades endpoint.
+ * This provides high-resolution data for the 1-minute chart.
  */
-export const fetchRecentTrades = async (limit: number = 1000): Promise<PriceDataPoint[]> => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/api/v3/trades?symbol=${BITCOIN_ID}&limit=${limit}`);
-    if (!response.ok) {
-      throw new Error('Network response was not ok for recent trades');
+export const fetchTradesForTimeRange = async (startTime: number, endTime: number): Promise<PriceDataPoint[]> => {
+    try {
+        const url = `${API_BASE_URL}/api/v3/aggTrades?symbol=${BITCOIN_ID}&startTime=${startTime}&endTime=${endTime}&limit=1000`;
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error('Network response was not ok for aggregate trades');
+        }
+        const data: BinanceAggTrade[] = await response.json();
+        
+        // Transform aggregate trade data into the PriceDataPoint format
+        return data.map(trade => ({
+            timestamp: trade.T,
+            price: parseFloat(trade.p),
+        }));
+    } catch (error) {
+        console.error("Failed to fetch aggregate trades:", error);
+        throw error;
     }
-    const data: BinanceTrade[] = await response.json();
-    
-    // Transform trade data into the PriceDataPoint format
-    return data.map(trade => ({
-      timestamp: trade.time,
-      price: parseFloat(trade.price),
-    }));
-  } catch (error) {
-    console.error("Failed to fetch recent trades:", error);
-    throw error;
-  }
 };
 
 
 export const fetchHistoricalData = async (range: string = '7d'): Promise<PriceDataPoint[]> => {
-  // For the 10m chart, we want high-resolution trade data, not 1-minute klines.
-  if (range === '10m') {
-    return fetchRecentTrades(1000); // Fetch last 1000 trades for high detail
+  // For the 1m chart, we want high-resolution trade data for the last 60 seconds.
+  if (range === '1m') {
+    const endTime = Date.now();
+    const startTime = endTime - 60 * 1000;
+    return fetchTradesForTimeRange(startTime, endTime);
   }
   
   try {
