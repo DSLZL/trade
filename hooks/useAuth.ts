@@ -1,8 +1,8 @@
 
 
+
 import React, { useState, useEffect, createContext, useContext, useCallback, ReactNode, useMemo } from 'react';
 import { User } from '../types';
-import { OAUTH_AUTH_URL, OAUTH_CLIENT_ID, OAUTH_REDIRECT_URI, OAUTH_SCOPE } from '../constants';
 import { exchangeCodeForToken, fetchUserInfo } from '../services/authApi';
 
 interface AuthContextType {
@@ -36,19 +36,22 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setIsLoading(false);
   }, []);
 
-  const login = useCallback(() => {
-    if (!OAUTH_CLIENT_ID) {
-      alert("OAuth Client ID is not configured. Please check your environment variables.");
-      return;
-    }
-    const params = new URLSearchParams({
-      client_id: OAUTH_CLIENT_ID,
-      redirect_uri: OAUTH_REDIRECT_URI,
-      response_type: 'code',
-      scope: OAUTH_SCOPE,
-    });
+  const login = useCallback(async () => {
+    try {
+      // 调用我们的后端来获取安全的授权 URL
+      const response = await fetch('/api/auth/login');
+      const data = await response.json();
 
-    window.location.href = `${OAUTH_AUTH_URL}?${params.toString()}`;
+      if (!response.ok) {
+        throw new Error(data.error || "无法获取登录 URL。");
+      }
+
+      // 重定向到从服务器获取的 URL
+      window.location.href = data.authorizationUrl;
+    } catch (error) {
+      console.error("登录失败:", error);
+      alert("登录过程中发生错误。请检查服务器日志并重试。");
+    }
   }, []);
 
   const logout = useCallback(() => {
