@@ -94,43 +94,51 @@ const TransactionHistory: React.FC = () => {
             <CardTitle>{t('transactionHistory.title')}</CardTitle>
             {/* Filter Controls */}
             <div className="pt-4 border-t mt-4">
-              <div className="flex flex-wrap items-end gap-4">
-                {/* Type Filter */}
-                <div className="flex flex-col gap-2">
-                    <label className="text-xs font-semibold text-muted-foreground">{t('transactionHistory.filters.type')}</label>
-                    <div className="flex items-center gap-1 bg-muted p-1 rounded-md">
-                        {(['ALL', 'BUY', 'SELL'] as const).map(type => (
-                            <Button 
-                                key={type}
-                                onClick={() => setFilterType(type)}
-                                variant={filterType === type ? 'default' : 'ghost'}
-                                size="sm"
-                                className={cn("capitalize px-3 h-8", {
-                                  'bg-background text-foreground hover:bg-background/90': filterType === type
-                                })}
-                            >
-                                {t(`transactionHistory.filters.${type.toLowerCase()}`)}
-                            </Button>
-                        ))}
-                    </div>
+              <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+                {/* Left side filters */}
+                <div className="flex flex-col sm:flex-row sm:items-end gap-4">
+                  
+                  {/* Type Filter */}
+                  <div className="flex flex-col gap-2">
+                      <label className="text-xs font-semibold text-muted-foreground">{t('transactionHistory.filters.type')}</label>
+                      <div className="flex items-center gap-1 bg-muted p-1 rounded-md">
+                          {(['ALL', 'BUY', 'SELL'] as const).map(type => (
+                              <Button 
+                                  key={type}
+                                  onClick={() => setFilterType(type)}
+                                  variant={filterType === type ? 'default' : 'ghost'}
+                                  size="sm"
+                                  className={cn("capitalize px-3 h-8", {
+                                    'bg-background text-foreground hover:bg-background/90': filterType === type
+                                  })}
+                              >
+                                  {t(`transactionHistory.filters.${type.toLowerCase()}`)}
+                              </Button>
+                          ))}
+                      </div>
+                  </div>
+
+                  {/* Date Filters */}
+                  <div className="flex items-end gap-2">
+                      <div className="flex flex-col gap-2 flex-1 min-w-0">
+                          <label htmlFor="start-date" className="text-xs font-semibold text-muted-foreground">{t('transactionHistory.filters.startDate')}</label>
+                          <Input id="start-date" type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
+                      </div>
+                      <div className="flex flex-col gap-2 flex-1 min-w-0">
+                          <label htmlFor="end-date" className="text-xs font-semibold text-muted-foreground">{t('transactionHistory.filters.endDate')}</label>
+                          <Input id="end-date" type="date" value={endDate} onChange={e => setEndDate(e.target.value)} />
+                      </div>
+                  </div>
                 </div>
-                {/* Date Filters */}
-                <div className="flex flex-wrap gap-4 flex-1">
-                    <div className="flex flex-col gap-2 min-w-[120px]">
-                        <label htmlFor="start-date" className="text-xs font-semibold text-muted-foreground">{t('transactionHistory.filters.startDate')}</label>
-                        <Input id="start-date" type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
-                    </div>
-                    <div className="flex flex-col gap-2 min-w-[120px]">
-                        <label htmlFor="end-date" className="text-xs font-semibold text-muted-foreground">{t('transactionHistory.filters.endDate')}</label>
-                        <Input id="end-date" type="date" value={endDate} onChange={e => setEndDate(e.target.value)} />
-                    </div>
-                </div>
-                 {/* Clear Button */}
-                 {areFiltersActive && (
+
+                {/* Right side clear button */}
+                <div className="flex-shrink-0">
+                  {areFiltersActive && (
                     <Button onClick={handleClearFilters} variant="ghost" size="sm">
                         {t('transactionHistory.filters.clear')}
                     </Button>
-                 )}
+                  )}
+                </div>
               </div>
             </div>
         </CardHeader>

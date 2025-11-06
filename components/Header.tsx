@@ -33,9 +33,6 @@ const Header: React.FC = () => {
             <a href="/" className={cn("text-sm font-medium transition-colors hover:text-primary", currentPath === '/' ? 'text-primary' : 'text-muted-foreground')}>
               {t('header.nav.dashboard')}
             </a>
-            <a href="/history" className={cn("text-sm font-medium transition-colors hover:text-primary", currentPath === '/history' ? 'text-primary' : 'text-muted-foreground')}>
-              {t('header.nav.history')}
-            </a>
           </nav>
         </div>
 

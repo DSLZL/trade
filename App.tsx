@@ -11,7 +11,8 @@ import ErrorBoundary from './components/ErrorBoundary';
 import { Toast } from './components/ui/Toast';
 import LiveTradeFeed from './components/LiveTradeFeed';
 import AuthCallback from './components/AuthCallback';
-import TransactionHistoryPage from './components/TransactionHistoryPage';
+import TransactionHistory from './components/TransactionHistory';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './components/ui/Tabs';
 
 const ToastManager: React.FC = () => {
     const { notification, clearNotification } = usePortfolio();
@@ -44,6 +45,7 @@ const ToastManager: React.FC = () => {
 };
 
 const MainApp: React.FC = () => {
+  const { t } = useTranslation();
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
@@ -61,9 +63,22 @@ const MainApp: React.FC = () => {
 
           {/* Right Column (or bottom on mobile) */}
           <div className="lg:col-span-1 space-y-6">
-              <ErrorBoundary fallbackMessage="Could not load the live trade feed.">
-                <LiveTradeFeed />
-              </ErrorBoundary>
+            <Tabs defaultValue="feed" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="feed">{t('infoPanel.liveFeed')}</TabsTrigger>
+                <TabsTrigger value="history">{t('header.nav.history')}</TabsTrigger>
+              </TabsList>
+              <TabsContent value="feed">
+                <ErrorBoundary fallbackMessage="Could not load the live trade feed.">
+                  <LiveTradeFeed />
+                </ErrorBoundary>
+              </TabsContent>
+              <TabsContent value="history">
+                <ErrorBoundary fallbackMessage="Could not load your transaction history.">
+                  <TransactionHistory />
+                </ErrorBoundary>
+              </TabsContent>
+            </Tabs>
           </div>
         </div>
       </main>
@@ -77,9 +92,6 @@ const App: React.FC = () => {
     const path = window.location.pathname;
     if (path === '/auth/callback') {
       return <AuthCallback />;
-    }
-    if (path === '/history') {
-        return <TransactionHistoryPage />;
     }
     return <MainApp />;
   };

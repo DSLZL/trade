@@ -118,6 +118,9 @@ const resources = {
         amount: "Amount (BTC)",
         time: "Time"
       },
+      infoPanel: {
+        liveFeed: "Live Feed"
+      },
       errorBoundary: {
         title: "Oops! Something went wrong.",
         message: "We're having trouble loading this section. Please try refreshing the page."
@@ -258,6 +261,9 @@ const resources = {
         price: "价格 (USDT)",
         amount: "数量 (BTC)",
         time: "时间"
+      },
+      infoPanel: {
+        liveFeed: "实时动态"
       },
       errorBoundary: {
         title: "哎呀！出错了。",
