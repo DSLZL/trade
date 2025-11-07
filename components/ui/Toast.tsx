@@ -1,24 +1,24 @@
-
 import React from 'react';
 import ReactDOM from 'react-dom';
 import { cn } from '../../lib/utils';
 
 interface ToastProps {
   message: string;
-  type: 'success' | 'error';
+  type: 'success' | 'error' | 'warning';
   onClose: () => void;
 }
 
 const toastTypeClasses = {
   success: 'bg-brand-green text-white',
   error: 'bg-brand-red text-white',
+  warning: 'bg-yellow-500 text-white',
 };
 
 const Toast: React.FC<ToastProps> = ({ message, type, onClose }) => {
   return ReactDOM.createPortal(
     <div
       className={cn(
-        'fixed top-5 left-1/2 -translate-x-1/2 z-50 flex items-center justify-between w-full max-w-sm p-4 rounded-lg shadow-lg',
+        'fixed bottom-5 right-5 z-50 flex items-center justify-between w-full max-w-sm p-4 rounded-lg shadow-lg',
         toastTypeClasses[type]
       )}
       role="alert"

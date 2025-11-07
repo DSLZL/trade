@@ -9,7 +9,7 @@ interface Notification {
   // The `i18next` `t` function requires an object with a string index signature for interpolation.
   // The generic `object` type does not have this, which was causing a TypeScript error.
   payload?: Record<string, any>;
-  type: 'success' | 'error';
+  type: 'success' | 'error' | 'warning';
 }
 
 interface PortfolioContextType {
@@ -35,6 +35,7 @@ export const PortfolioProvider: React.FC<{ children: ReactNode }> = ({ children 
   const [notification, setNotification] = useState<Notification | null>(null);
 
   const hasLoaded = useRef(false);
+  const dueSoonNotified = useRef(false);
 
   // Load data from IndexedDB on initial component mount.
   useEffect(() => {
@@ -197,7 +198,10 @@ export const PortfolioProvider: React.FC<{ children: ReactNode }> = ({ children 
         const daysPassed = (new Date().getTime() - prev.loan.loanDate.getTime()) / (1000 * 3600 * 24);
         const yearsPassed = daysPassed / 365;
         const interest = prev.loan.principal * prev.loan.interestRate * yearsPassed;
-        const totalRepayment = prev.loan.principal + interest;
+        let totalRepayment = prev.loan.principal + interest;
+
+        // Round to the nearest cent for financial accuracy
+        totalRepayment = Math.round(totalRepayment * 100) / 100;
 
         if (prev.usdBalance < totalRepayment) {
             setNotification({ messageKey: 'bank.notifications.repayInsufficientFunds', type: 'error' });
@@ -216,6 +220,82 @@ export const PortfolioProvider: React.FC<{ children: ReactNode }> = ({ children 
         };
     });
   }, []);
+  
+  const applyLoanPenalty = useCallback(() => {
+    setPortfolio(prev => {
+        if (!prev.loan) return prev;
+
+        const years = prev.loan.repaymentPeriodDays / 365;
+        const interest = prev.loan.principal * prev.loan.interestRate * years;
+        let totalDueAtTerm = prev.loan.principal + interest;
+        
+        // Round due amount to the nearest cent first
+        totalDueAtTerm = Math.round(totalDueAtTerm * 100) / 100;
+
+        let penaltyAmount = totalDueAtTerm * 1.25;
+        // Round the final penalty amount to the nearest cent
+        penaltyAmount = Math.round(penaltyAmount * 100) / 100;
+
+
+        setNotification({
+            messageKey: 'bank.notifications.loanOverduePenalty',
+            payload: { amount: penaltyAmount.toLocaleString('en-US', { style: 'currency', currency: 'USD' }) },
+            type: 'error',
+        });
+
+        return {
+            ...prev,
+            usdBalance: prev.usdBalance - penaltyAmount,
+            loan: null,
+        };
+    });
+  }, []);
+
+  // Effect for checking loan status (due date reminders and penalties)
+  useEffect(() => {
+    if (!portfolio.loan) {
+        dueSoonNotified.current = false; // Reset flag when loan is cleared
+        return;
+    }
+
+    const checkLoanStatus = () => {
+        // This function will check the current loan from the component's state.
+        // The effect dependency on `portfolio.loan` ensures we always have the latest loan data.
+        const loan = portfolio.loan;
+        if (!loan) return;
+
+        const now = new Date();
+        const dueDate = loan.dueDate;
+
+        // Check if overdue
+        if (now > dueDate) {
+            applyLoanPenalty(); // This will clear the loan and trigger effect cleanup
+            return;
+        }
+
+        // Check for reminder (due in less than 24 hours)
+        const timeUntilDue = dueDate.getTime() - now.getTime();
+        const oneDayInMillis = 24 * 60 * 60 * 1000;
+
+        if (timeUntilDue > 0 && timeUntilDue < oneDayInMillis && !dueSoonNotified.current) {
+            dueSoonNotified.current = true; // Set flag to prevent repeated notifications
+            setNotification({
+                messageKey: 'bank.notifications.loanDueSoon',
+                type: 'warning',
+            });
+        }
+    };
+    
+    // Check status immediately when the loan data changes, then set an interval
+    checkLoanStatus();
+    const intervalId = setInterval(checkLoanStatus, 60 * 1000); // Check every minute
+
+    // Cleanup function: this runs when the component unmounts or when portfolio.loan changes
+    return () => {
+        clearInterval(intervalId);
+    };
+  }, [portfolio.loan, applyLoanPenalty]);
+
 
   const value = useMemo(() => ({ portfolio, buyBtc, sellBtc, takeLoan, repayLoan, notification, clearNotification }), [portfolio, buyBtc, sellBtc, takeLoan, repayLoan, notification, clearNotification]);
 

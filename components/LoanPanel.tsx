@@ -45,7 +45,10 @@ const LoanPanel: React.FC = () => {
             const daysPassed = (new Date().getTime() - portfolio.loan!.loanDate.getTime()) / (1000 * 3600 * 24);
             const yearsPassed = daysPassed / 365;
             const interest = portfolio.loan!.principal * portfolio.loan!.interestRate * yearsPassed;
-            setRepaymentAmount(portfolio.loan!.principal + interest);
+            const totalRepayment = portfolio.loan!.principal + interest;
+            // Round to 2 decimal places for display
+            const roundedRepayment = Math.round(totalRepayment * 100) / 100;
+            setRepaymentAmount(roundedRepayment);
         };
         calculateRepayment(); // Initial calculation
         const interval = setInterval(calculateRepayment, 1000); // Update every second
@@ -56,14 +59,16 @@ const LoanPanel: React.FC = () => {
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    if (value === "" || /^\d*\.?\d*$/.test(value)) {
+    // Allow empty string, numbers, and numbers with up to two decimal places
+    if (value === "" || /^\d*\.?\d{0,2}$/.test(value)) {
       setAmount(value);
     }
   };
 
   const handleTakeLoan = () => {
     if (isAmountValid && !exceedsMax) {
-        takeLoan(numericAmount, period);
+        const roundedAmount = Math.round(numericAmount * 100) / 100;
+        takeLoan(roundedAmount, period);
         setAmount('');
     }
   };

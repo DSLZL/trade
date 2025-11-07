@@ -1,5 +1,3 @@
-
-
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
@@ -149,7 +147,9 @@ const resources = {
             loanRepaid: "Loan successfully repaid.",
             loanExists: "You already have an active loan.",
             loanTooHigh: "Loan amount exceeds the maximum allowed.",
-            repayInsufficientFunds: "Insufficient USD balance to repay the loan."
+            repayInsufficientFunds: "Insufficient USD balance to repay the loan.",
+            loanDueSoon: "Your loan is due in less than 24 hours. Please repay to avoid penalties.",
+            loanOverduePenalty: "Your loan is overdue! A penalty of 1.25x the due amount has been applied. Amount deducted: {{amount}}."
         }
       },
       errorBoundary: {
@@ -323,7 +323,9 @@ const resources = {
             loanRepaid: "贷款已成功还清。",
             loanExists: "您已有一笔生效中的贷款。",
             loanTooHigh: "贷款金额超过了最大允许额度。",
-            repayInsufficientFunds: "美元余额不足，无法偿还贷款。"
+            repayInsufficientFunds: "美元余额不足，无法偿还贷款。",
+            loanDueSoon: "您的贷款将在24小时内到期，请及时还款以避免罚款。",
+            loanOverduePenalty: "您的贷款已逾期！已按到期金额的1.25倍收取罚款。已扣除金额：{{amount}}。"
         }
       },
       errorBoundary: {
