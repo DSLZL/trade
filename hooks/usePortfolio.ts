@@ -1,6 +1,6 @@
 import React, { useState, createContext, useContext, useCallback, ReactNode, useMemo, useEffect, useRef } from 'react';
-import { Portfolio, Transaction, TransactionType } from '../types';
-import { INITIAL_USD_BALANCE } from '../constants';
+import { Portfolio, Transaction, TransactionType, Loan } from '../types';
+import { INITIAL_USD_BALANCE, LOAN_APR, MAX_LOAN_MULTIPLIER } from '../constants';
 import { getPortfolio, savePortfolio } from '../services/db';
 
 interface Notification {
@@ -16,6 +16,8 @@ interface PortfolioContextType {
   portfolio: Portfolio;
   buyBtc: (usdAmount: number, currentPrice: number) => void;
   sellBtc: (btcAmount: number, currentPrice: number) => void;
+  takeLoan: (amount: number, periodDays: number) => void;
+  repayLoan: () => void;
   notification: Notification | null;
   clearNotification: () => void;
 }
@@ -28,6 +30,7 @@ export const PortfolioProvider: React.FC<{ children: ReactNode }> = ({ children 
     usdBalance: INITIAL_USD_BALANCE,
     btcBalance: 0,
     transactions: [],
+    loan: null,
   });
   const [notification, setNotification] = useState<Notification | null>(null);
 
@@ -44,6 +47,10 @@ export const PortfolioProvider: React.FC<{ children: ReactNode }> = ({ children 
             ...tx,
             date: new Date((tx.date as unknown) as string),
           }));
+          if (savedPortfolio.loan) {
+            savedPortfolio.loan.loanDate = new Date((savedPortfolio.loan.loanDate as unknown) as string);
+            savedPortfolio.loan.dueDate = new Date((savedPortfolio.loan.dueDate as unknown) as string);
+          }
           setPortfolio(savedPortfolio);
         }
         // If no saved portfolio, the default initial state will be used and subsequently saved.
@@ -141,8 +148,76 @@ export const PortfolioProvider: React.FC<{ children: ReactNode }> = ({ children 
       };
     });
   }, []);
+  
+  const takeLoan = useCallback((amount: number, periodDays: number) => {
+    setPortfolio(prev => {
+        if (prev.loan) {
+            setNotification({ messageKey: 'bank.notifications.loanExists', type: 'error' });
+            return prev;
+        }
 
-  const value = useMemo(() => ({ portfolio, buyBtc, sellBtc, notification, clearNotification }), [portfolio, buyBtc, sellBtc, notification, clearNotification]);
+        const ownedUsd = prev.usdBalance;
+        const maxLoan = ownedUsd * MAX_LOAN_MULTIPLIER;
+
+        if (amount <= 0 || amount > maxLoan) {
+            setNotification({ messageKey: 'bank.notifications.loanTooHigh', type: 'error' });
+            return prev;
+        }
+
+        const loanDate = new Date();
+        const dueDate = new Date(loanDate);
+        dueDate.setDate(dueDate.getDate() + periodDays);
+
+        const newLoan: Loan = {
+            principal: amount,
+            interestRate: LOAN_APR,
+            loanDate,
+            dueDate,
+            repaymentPeriodDays: periodDays,
+        };
+
+        setNotification({
+            messageKey: 'bank.notifications.loanTaken',
+            payload: { amount: amount.toLocaleString('en-US', { style: 'currency', currency: 'USD' }) },
+            type: 'success',
+        });
+
+        return {
+            ...prev,
+            usdBalance: prev.usdBalance + amount,
+            loan: newLoan,
+        };
+    });
+  }, []);
+
+  const repayLoan = useCallback(() => {
+    setPortfolio(prev => {
+        if (!prev.loan) return prev;
+
+        const daysPassed = (new Date().getTime() - prev.loan.loanDate.getTime()) / (1000 * 3600 * 24);
+        const yearsPassed = daysPassed / 365;
+        const interest = prev.loan.principal * prev.loan.interestRate * yearsPassed;
+        const totalRepayment = prev.loan.principal + interest;
+
+        if (prev.usdBalance < totalRepayment) {
+            setNotification({ messageKey: 'bank.notifications.repayInsufficientFunds', type: 'error' });
+            return prev;
+        }
+
+        setNotification({
+            messageKey: 'bank.notifications.loanRepaid',
+            type: 'success',
+        });
+
+        return {
+            ...prev,
+            usdBalance: prev.usdBalance - totalRepayment,
+            loan: null,
+        };
+    });
+  }, []);
+
+  const value = useMemo(() => ({ portfolio, buyBtc, sellBtc, takeLoan, repayLoan, notification, clearNotification }), [portfolio, buyBtc, sellBtc, takeLoan, repayLoan, notification, clearNotification]);
 
   // Note: Using React.createElement is necessary here because this is a .ts file,
   // not a .tsx file, and therefore does not support JSX syntax.

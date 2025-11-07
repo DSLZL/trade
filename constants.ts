@@ -3,6 +3,8 @@
 export const API_BASE_URL = 'https://api.binance.com';
 export const BITCOIN_ID = 'BTCUSDT'; // Symbol for Binance API
 export const INITIAL_USD_BALANCE = 100; // Start with $100
+export const LOAN_APR = 0.18; // 18% Annual Percentage Rate for loans
+export const MAX_LOAN_MULTIPLIER = 10;
 
 // --- OAuth2 Configuration for Linux.do ---
 export const OAUTH_CLIENT_ID = process.env.CLIENT_ID;

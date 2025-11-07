@@ -66,13 +66,22 @@ export async function savePortfolio(portfolio: Portfolio): Promise<void> {
         const store = transaction.objectStore(PORTFOLIO_STORE_NAME);
         
         // Create a serializable version of the portfolio, converting Date objects to strings.
-        const serializablePortfolio = {
+        const serializablePortfolio: any = {
             ...portfolio,
             transactions: portfolio.transactions.map(tx => ({
                 ...tx,
                 date: tx.date.toISOString(), // Convert Date to ISO string for storage
             })),
         };
+
+        if (portfolio.loan) {
+            serializablePortfolio.loan = {
+                ...portfolio.loan,
+                loanDate: portfolio.loan.loanDate.toISOString(),
+                dueDate: portfolio.loan.dueDate.toISOString(),
+            };
+        }
+
 
         const request = store.put(serializablePortfolio, PORTFOLIO_KEY);
 

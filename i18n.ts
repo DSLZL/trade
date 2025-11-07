@@ -1,4 +1,5 @@
 
+
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
@@ -16,7 +17,8 @@ const resources = {
         logout: "Logout",
         nav: {
             dashboard: "Dashboard",
-            history: "History"
+            history: "History",
+            bank: "Bank"
         },
         tooltips: {
           switchToEn: "Switch to English",
@@ -121,6 +123,35 @@ const resources = {
       infoPanel: {
         liveFeed: "Live Feed"
       },
+      bank: {
+        title: "Bank & Loans",
+        noLoan: "Take a Loan",
+        activeLoan: "Active Loan",
+        availableCollateral: "Available for Collateral (Owned USD)",
+        maxLoanAmount: "Maximum Loan Amount",
+        loanAmount: "Loan Amount (USD)",
+        repaymentPeriod: "Repayment Period",
+        days: "{{count}} day",
+        days_plural: "{{count}} days",
+        month: "1 Month",
+        summary: "Loan Summary",
+        interestRateAPR: "Interest Rate (APR)",
+        totalInterest: "Total Interest Due at Term",
+        totalRepayment: "Total Repayment at Term",
+        takeLoan: "Take Loan",
+        principal: "Principal Amount",
+        loanDate: "Loan Date",
+        dueDate: "Due Date",
+        amountToRepayNow: "Amount to Repay Now",
+        repayLoan: "Repay Full Amount",
+        notifications: {
+            loanTaken: "Successfully borrowed {{amount}}.",
+            loanRepaid: "Loan successfully repaid.",
+            loanExists: "You already have an active loan.",
+            loanTooHigh: "Loan amount exceeds the maximum allowed.",
+            repayInsufficientFunds: "Insufficient USD balance to repay the loan."
+        }
+      },
       errorBoundary: {
         title: "Oops! Something went wrong.",
         message: "We're having trouble loading this section. Please try refreshing the page."
@@ -160,7 +191,8 @@ const resources = {
         logout: "登出",
         nav: {
             dashboard: "仪表盘",
-            history: "交易历史"
+            history: "交易历史",
+            bank: "银行"
         },
         tooltips: {
           switchToEn: "切换到英语",
@@ -264,6 +296,35 @@ const resources = {
       },
       infoPanel: {
         liveFeed: "实时动态"
+      },
+      bank: {
+        title: "银行与贷款",
+        noLoan: "申请贷款",
+        activeLoan: "当前贷款",
+        availableCollateral: "可用作抵押 (自有美元)",
+        maxLoanAmount: "最大贷款额度",
+        loanAmount: "贷款金额 (USD)",
+        repaymentPeriod: "还款期限",
+        days: "{{count}} 天",
+        days_plural: "{{count}} 天",
+        month: "1 个月",
+        summary: "贷款概要",
+        interestRateAPR: "年利率 (APR)",
+        totalInterest: "到期总利息",
+        totalRepayment: "到期总还款额",
+        takeLoan: "申请贷款",
+        principal: "贷款本金",
+        loanDate: "贷款日期",
+        dueDate: "还款日期",
+        amountToRepayNow: "当前需还款总额",
+        repayLoan: "全额还款",
+        notifications: {
+            loanTaken: "成功借入 {{amount}}。",
+            loanRepaid: "贷款已成功还清。",
+            loanExists: "您已有一笔生效中的贷款。",
+            loanTooHigh: "贷款金额超过了最大允许额度。",
+            repayInsufficientFunds: "美元余额不足，无法偿还贷款。"
+        }
       },
       errorBoundary: {
         title: "哎呀！出错了。",

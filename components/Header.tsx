@@ -1,4 +1,5 @@
 
+
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import Button from './ui/Button';
@@ -32,6 +33,9 @@ const Header: React.FC = () => {
           <nav className="hidden md:flex gap-6">
             <a href="/" className={cn("text-sm font-medium transition-colors hover:text-primary", currentPath === '/' ? 'text-primary' : 'text-muted-foreground')}>
               {t('header.nav.dashboard')}
+            </a>
+             <a href="/bank" className={cn("text-sm font-medium transition-colors hover:text-primary", currentPath === '/bank' ? 'text-primary' : 'text-muted-foreground')}>
+              {t('header.nav.bank')}
             </a>
           </nav>
         </div>

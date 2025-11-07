@@ -19,10 +19,19 @@ export interface Transaction {
   priceAtTransaction: number;
 }
 
+export interface Loan {
+  principal: number;
+  interestRate: number; // Annual Percentage Rate (APR)
+  loanDate: Date;
+  dueDate: Date;
+  repaymentPeriodDays: number;
+}
+
 export interface Portfolio {
   usdBalance: number;
   btcBalance: number;
   transactions: Transaction[];
+  loan?: Loan | null;
 }
 
 export interface PriceDataPoint {

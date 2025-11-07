@@ -1,4 +1,5 @@
 
+
 import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { PriceProvider } from './hooks/useBitcoinPrice';
@@ -13,6 +14,7 @@ import LiveTradeFeed from './components/LiveTradeFeed';
 import AuthCallback from './components/AuthCallback';
 import TransactionHistory from './components/TransactionHistory';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './components/ui/Tabs';
+import BankPage from './components/BankPage';
 
 const ToastManager: React.FC = () => {
     const { notification, clearNotification } = usePortfolio();
@@ -92,6 +94,9 @@ const App: React.FC = () => {
     const path = window.location.pathname;
     if (path === '/auth/callback') {
       return <AuthCallback />;
+    }
+    if (path === '/bank') {
+      return <BankPage />;
     }
     return <MainApp />;
   };
