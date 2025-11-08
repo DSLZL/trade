@@ -1,16 +1,33 @@
-import { NextRequest, NextResponse } from 'next/server';
+import type { Config } from '@vercel/node';
+import { VercelRequest, VercelResponse } from '@vercel/node';
 
-export const config = {
+export const config: Config = {
   runtime: 'edge',
 };
 
-export default async function handler(req: NextRequest) {
-  const searchParams = req.nextUrl.searchParams;
-  const code = searchParams.get('code');
-  const state = searchParams.get('state');
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  // 设置 CORS 头
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
+
+  if (req.method !== 'GET') {
+    res.status(405).json({ error: 'Method not allowed' });
+    return;
+  }
+
+  const url = new URL(req.url || '', `https://${req.headers.host}`);
+  const code = url.searchParams.get('code');
+  const state = url.searchParams.get('state');
 
   if (!code) {
-    return new Response('Authorization code not found', { status: 400 });
+    res.status(400).send('Authorization code not found');
+    return;
   }
 
   try {
@@ -31,7 +48,8 @@ export default async function handler(req: NextRequest) {
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       console.error('Token exchange error:', errorData);
-      return new Response('Failed to exchange token', { status: 400 });
+      res.status(400).send('Failed to exchange token');
+      return;
     }
 
     const tokenData = await response.json();
@@ -56,11 +74,10 @@ export default async function handler(req: NextRequest) {
       </html>
     `;
 
-    return new Response(html, {
-      headers: { 'Content-Type': 'text/html' },
-    });
+    res.setHeader('Content-Type', 'text/html');
+    res.status(200).send(html);
   } catch (error) {
     console.error('OAuth callback error:', error);
-    return new Response('Internal server error', { status: 500 });
+    res.status(500).send('Internal server error');
   }
 }
