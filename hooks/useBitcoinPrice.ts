@@ -1,5 +1,5 @@
 import React, { useState, useEffect, createContext, useContext, useCallback, ReactNode, useMemo, useRef } from 'react';
-import { fetchHistoricalData } from '../services/cryptoApi';
+import { fetchHistoricalData, fetch24hTicker } from '../services/cryptoApi';
 import { PriceDataPoint, WebSocketTradePayload, LiveTrade } from '../types';
 
 type WebSocketStatus = 'connecting' | 'connected' | 'disconnected';
@@ -137,10 +137,9 @@ export const PriceProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   useEffect(() => {
     const fetch24hOpen = async () => {
         try {
-            const dailyData = await fetchHistoricalData('1d');
-            if(dailyData.length > 0 && dailyData[0].open !== undefined) {
-                setOpenPrice24h(dailyData[0].open);
-            }
+            // OPTIMIZATION: Use the more efficient 24hr ticker endpoint instead of fetching klines.
+            const tickerData = await fetch24hTicker();
+            setOpenPrice24h(parseFloat(tickerData.openPrice));
         } catch (err) {
             console.error("Failed to fetch 24h open price:", err);
         }

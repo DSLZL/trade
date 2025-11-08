@@ -100,6 +100,32 @@ export interface WebSocketTradePayload {
   M: boolean; // Ignore
 }
 
+// Type for Binance API /ticker/24hr endpoint response
+export interface Binance24hTicker {
+    symbol: string;
+    priceChange: string;
+    priceChangePercent: string;
+    weightedAvgPrice: string;
+    prevClosePrice: string;
+    lastPrice: string;
+    lastQty: string;
+    bidPrice: string;
+    bidQty: string;
+    askPrice: string;
+    askQty: string;
+    openPrice: string;
+    highPrice: string;
+    lowPrice: string;
+    volume: string;
+    quoteVolume: string;
+    openTime: number;
+    closeTime: number;
+    firstId: number;
+    lastId: number;
+    count: number;
+}
+
+
 // --- OAuth2 Types ---
 export interface TokenResponse {
   access_token: string;

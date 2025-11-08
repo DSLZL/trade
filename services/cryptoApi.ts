@@ -1,7 +1,7 @@
 
 
 import { API_BASE_URL, BITCOIN_ID } from '../constants';
-import { BinanceTicker, BinanceKline, PriceDataPoint, BinanceAggTrade } from '../types';
+import { BinanceTicker, BinanceKline, PriceDataPoint, BinanceAggTrade, Binance24hTicker } from '../types';
 
 export const fetchCurrentPrice = async (): Promise<number> => {
   try {
@@ -15,6 +15,20 @@ export const fetchCurrentPrice = async (): Promise<number> => {
     console.error("Failed to fetch current price:", error);
     throw error;
   }
+};
+
+export const fetch24hTicker = async (): Promise<Binance24hTicker> => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/v3/ticker/24hr?symbol=${BITCOIN_ID}`);
+        if (!response.ok) {
+            throw new Error('Network response was not ok for 24h ticker');
+        }
+        const data: Binance24hTicker = await response.json();
+        return data;
+    } catch (error) {
+        console.error("Failed to fetch 24h ticker:", error);
+        throw error;
+    }
 };
 
 /**

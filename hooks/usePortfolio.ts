@@ -43,15 +43,8 @@ export const PortfolioProvider: React.FC<{ children: ReactNode }> = ({ children 
       try {
         const savedPortfolio = await getPortfolio();
         if (savedPortfolio) {
-          // Data from IndexedDB is plain JSON, so Date objects need to be reconstructed.
-          savedPortfolio.transactions = savedPortfolio.transactions.map(tx => ({
-            ...tx,
-            date: new Date((tx.date as unknown) as string),
-          }));
-          if (savedPortfolio.loan) {
-            savedPortfolio.loan.loanDate = new Date((savedPortfolio.loan.loanDate as unknown) as string);
-            savedPortfolio.loan.dueDate = new Date((savedPortfolio.loan.dueDate as unknown) as string);
-          }
+          // BUG FIX: Date object reconstruction is now handled by the getPortfolio service.
+          // This simplifies the hook and improves separation of concerns.
           setPortfolio(savedPortfolio);
         }
         // If no saved portfolio, the default initial state will be used and subsequently saved.
