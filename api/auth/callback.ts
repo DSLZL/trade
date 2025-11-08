@@ -1,33 +1,42 @@
-import type { Config } from '@vercel/node';
-import { VercelRequest, VercelResponse } from '@vercel/node';
-
-export const config: Config = {
+export const config = {
   runtime: 'edge',
 };
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // 设置 CORS 头
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+// 统一的 CORS Headers
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type',
+};
 
+export default async function handler(req: Request) {
+  // 处理 OPTIONS 预检请求
   if (req.method === 'OPTIONS') {
-    res.status(200).end();
-    return;
+    return new Response(null, {
+      status: 204,
+      headers: corsHeaders,
+    });
   }
 
   if (req.method !== 'GET') {
-    res.status(405).json({ error: 'Method not allowed' });
-    return;
+    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
+      status: 405,
+      headers: {
+        'Content-Type': 'application/json',
+        ...corsHeaders,
+      },
+    });
   }
 
-  const url = new URL(req.url || '', `https://${req.headers.host}`);
+  const url = new URL(req.url);
   const code = url.searchParams.get('code');
-  const state = url.searchParams.get('state');
+  // const state = url.searchParams.get('state'); // state should be validated against a stored value if used for security
 
   if (!code) {
-    res.status(400).send('Authorization code not found');
-    return;
+    return new Response('Authorization code not found', {
+      status: 400,
+      headers: corsHeaders,
+    });
   }
 
   try {
@@ -46,10 +55,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
+      const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
       console.error('Token exchange error:', errorData);
-      res.status(400).send('Failed to exchange token');
-      return;
+      return new Response('Failed to exchange token', {
+        status: response.status,
+        headers: corsHeaders,
+      });
     }
 
     const tokenData = await response.json();
@@ -63,21 +74,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       </head>
       <body>
         <script>
-          window.opener.postMessage({
-            type: 'oauth_success',
-            data: ${JSON.stringify(tokenData)}
-          }, '${process.env.FRONTEND_URL || 'http://localhost:3000'}');
-
+          if (window.opener) {
+            window.opener.postMessage({
+              type: 'oauth_success',
+              data: ${JSON.stringify(tokenData)}
+            }, '${process.env.FRONTEND_URL || 'http://localhost:3000'}');
+          }
           window.close();
         </script>
+        <p>Authentication successful. You can close this window.</p>
       </body>
       </html>
     `;
 
-    res.setHeader('Content-Type', 'text/html');
-    res.status(200).send(html);
+    return new Response(html, {
+      status: 200,
+      headers: {
+        'Content-Type': 'text/html',
+        ...corsHeaders,
+      },
+    });
   } catch (error) {
     console.error('OAuth callback error:', error);
-    res.status(500).send('Internal server error');
+    return new Response('Internal server error', {
+      status: 500,
+      headers: corsHeaders,
+    });
   }
 }
