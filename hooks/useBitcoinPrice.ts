@@ -55,8 +55,9 @@ export const PriceProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       const formattedData = await fetchHistoricalData(range);
       setHistoricalData(formattedData);
     } catch (err) {
+      // Squelch error for UI but log warning
+      console.warn('Could not fetch historical data:', err);
       setError('Failed to fetch historical price data.');
-      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -91,9 +92,10 @@ export const PriceProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         }, RECONNECT_DELAY);
     };
 
-    ws.onerror = (event) => {
-        console.error("Shared WebSocket Error:", event);
-        // onError usually leads to onClose, so handling reconnection in onClose is safer
+    ws.onerror = () => {
+        // WebSocket errors are usually handled by onclose
+        // Suppress the [object Object] log
+        // console.debug("WebSocket encountered an error");
     };
 
     ws.onmessage = (event) => {
@@ -195,7 +197,7 @@ export const PriceProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             const tickerData = await fetch24hTicker();
             setOpenPrice24h(parseFloat(tickerData.openPrice));
         } catch (err) {
-            console.error("Failed to fetch 24h open price:", err);
+            console.warn("Failed to fetch 24h open price (likely network or CORS):", err);
         }
     };
     fetch24hOpen();

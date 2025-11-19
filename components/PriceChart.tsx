@@ -1,7 +1,6 @@
 import React from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useBitcoinPrice } from '../hooks/useBitcoinPrice';
-import Button from './ui/Button';
 import { useTranslation } from 'react-i18next';
 import { PriceDataPoint } from '../types';
 import { cn } from '../lib/utils';
@@ -127,7 +126,7 @@ const PriceChart: React.FC = () => {
           <div className="flex justify-center items-center h-full text-brand-red text-sm">{error}</div>
         ) : (
           <ResponsiveContainer>
-            <AreaChart data={historicalData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+            <AreaChart data={historicalData} margin={{ top: 10, right: 0, left: 0, bottom: 0 }}>
               <defs>
                   <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
@@ -153,6 +152,7 @@ const PriceChart: React.FC = () => {
                 tick={{fontSize: 11}}
                 tickLine={false}
                 axisLine={false}
+                width={65}
               />
               <Tooltip 
                 content={<CustomTooltip />} 
