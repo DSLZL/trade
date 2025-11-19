@@ -21,8 +21,8 @@ interface PriceContextType {
 const PriceContext = createContext<PriceContextType | undefined>(undefined);
 
 const MAX_LIVE_TRADES = 20; // Number of trades to show in the live feed
+const RECONNECT_DELAY = 3000; // 3 seconds
 
-// FIX: Changed component signature to use React.FC to fix typing issue in App.tsx
 export const PriceProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [currentPrice, setCurrentPrice] = useState<number | null>(null);
   const [historicalData, setHistoricalData] = useState<PriceDataPoint[]>([]);
@@ -37,8 +37,16 @@ export const PriceProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [liveTrades, setLiveTrades] = useState<LiveTrade[]>([]);
   const [wsStatus, setWsStatus] = useState<WebSocketStatus>('connecting');
 
-  // Ref to buffer incoming high-frequency trade data for the 1m chart
+  // Refs
   const tradesBufferRef = useRef<PriceDataPoint[]>([]);
+  const wsRef = useRef<WebSocket | null>(null);
+  const reconnectTimeoutRef = useRef<number | null>(null);
+  const timeRangeRef = useRef<string>(timeRange);
+
+  // Sync timeRange state to ref for use in WS callback
+  useEffect(() => {
+    timeRangeRef.current = timeRange;
+  }, [timeRange]);
 
   const getHistoricalData = useCallback(async (range: string) => {
     setLoading(true);
@@ -54,73 +62,120 @@ export const PriceProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
   }, []);
 
-  // Effect to manage the single, persistent WebSocket connection for the app's lifetime.
-  // This provides real-time data for the current price and the live trade feed.
-  useEffect(() => {
-    const ws = new WebSocket('wss://stream.binance.com:9443/ws/btcusdt@trade');
+  // WebSocket connection function with auto-reconnect
+  const connectWebSocket = useCallback(() => {
+    // Close existing connection if any
+    if (wsRef.current) {
+        wsRef.current.close();
+    }
 
-    ws.onopen = () => setWsStatus('connected');
-    ws.onclose = () => setWsStatus('disconnected');
+    setWsStatus('connecting');
+    const ws = new WebSocket('wss://stream.binance.com:9443/ws/btcusdt@trade');
+    wsRef.current = ws;
+
+    ws.onopen = () => {
+        setWsStatus('connected');
+        // Clear any pending reconnect timers
+        if (reconnectTimeoutRef.current) {
+            clearTimeout(reconnectTimeoutRef.current);
+            reconnectTimeoutRef.current = null;
+        }
+    };
+
+    ws.onclose = () => {
+        setWsStatus('disconnected');
+        // Attempt to reconnect after a delay
+        reconnectTimeoutRef.current = window.setTimeout(() => {
+            console.log('Attempting to reconnect WebSocket...');
+            connectWebSocket();
+        }, RECONNECT_DELAY);
+    };
+
     ws.onerror = (event) => {
-      console.error("Shared WebSocket Error. See browser console for details.", event);
-      setWsStatus('disconnected');
+        console.error("Shared WebSocket Error:", event);
+        // onError usually leads to onClose, so handling reconnection in onClose is safer
     };
 
     ws.onmessage = (event) => {
-      const message: WebSocketTradePayload = JSON.parse(event.data);
-      const price = parseFloat(message.p);
-      
-      // 1. Update current price for all components
-      setCurrentPrice(price);
-      
-      // 2. Add to the 1m chart buffer
-      tradesBufferRef.current.push({
-        timestamp: message.T,
-        price: price,
-        isLive: true,
-      });
+      try {
+        const message: WebSocketTradePayload = JSON.parse(event.data);
+        const price = parseFloat(message.p);
+        
+        // 1. Update current price for all components
+        setCurrentPrice(price);
+        
+        // 2. Add to the 1m chart buffer ONLY if we are in '1m' mode
+        // This prevents memory leaks when viewing other timeframes
+        if (timeRangeRef.current === '1m') {
+            tradesBufferRef.current.push({
+                timestamp: message.T,
+                price: price,
+                isLive: true,
+            });
+        } else {
+            // Keep buffer empty to save memory
+            if (tradesBufferRef.current.length > 0) {
+                tradesBufferRef.current = [];
+            }
+        }
 
-      // 3. Update the live trade feed
-      const newTrade: LiveTrade = {
-        id: message.t,
-        price: price,
-        amount: parseFloat(message.q),
-        time: message.T,
-        isBuyerMaker: message.m,
-      };
-      setLiveTrades(prev => [newTrade, ...prev.slice(0, MAX_LIVE_TRADES - 1)]);
+        // 3. Update the live trade feed
+        const newTrade: LiveTrade = {
+          id: message.t,
+          price: price,
+          amount: parseFloat(message.q),
+          time: message.T,
+          isBuyerMaker: message.m,
+        };
+        setLiveTrades(prev => [newTrade, ...prev.slice(0, MAX_LIVE_TRADES - 1)]);
+      } catch (e) {
+        console.error("Error parsing WebSocket message", e);
+      }
     };
+  }, []);
+
+  // Initial connection setup
+  useEffect(() => {
+    connectWebSocket();
 
     return () => {
-      ws.close();
+      if (wsRef.current) {
+        wsRef.current.close();
+      }
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+      }
     };
-  }, []); // Run only once on mount
+  }, [connectWebSocket]);
 
   // Effect to handle fetching and updating chart data based on the selected timeRange.
   useEffect(() => {
     let dataUpdateInterval: number | undefined;
 
     if (timeRange === '1m') {
-      // For 1m, first get the initial dataset, then start the interval to append live data.
+      // Clear buffer when switching to 1m
+      tradesBufferRef.current = [];
+      // For 1m, first get the initial dataset
       getHistoricalData('1m');
       
+      // Start the interval to append live data to the chart
       dataUpdateInterval = window.setInterval(() => {
         if (tradesBufferRef.current.length === 0) return;
 
-        const newTrades = tradesBufferRef.current;
-        tradesBufferRef.current = []; // Clear buffer for next batch
+        const newTrades = [...tradesBufferRef.current]; // Copy
+        tradesBufferRef.current = []; // Clear buffer
 
         setHistoricalData(prevData => {
-          const combinedData = [...prevData, ...newTrades];
+          // Optimization: Use concat instead of spread for large arrays
+          const combinedData = prevData.concat(newTrades);
           const oneMinuteAgo = Date.now() - 60 * 1000;
           
-          // OPTIMIZATION: Instead of filtering the whole array, find the first valid index
-          // and slice from there. This is vastly more performant on large arrays.
           const firstValidIndex = combinedData.findIndex(p => p.timestamp >= oneMinuteAgo);
           
+          // If all data is old (rare), return empty, else return windowed data
           return firstValidIndex === -1 ? [] : combinedData.slice(firstValidIndex);
         });
-      }, 500);
+      }, 1000); // Update chart every second to reduce render load
 
     } else {
       // For all other ranges, just fetch the historical data once.
@@ -137,7 +192,6 @@ export const PriceProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   useEffect(() => {
     const fetch24hOpen = async () => {
         try {
-            // OPTIMIZATION: Use the more efficient 24hr ticker endpoint instead of fetching klines.
             const tickerData = await fetch24hTicker();
             setOpenPrice24h(parseFloat(tickerData.openPrice));
         } catch (err) {
@@ -145,7 +199,7 @@ export const PriceProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         }
     };
     fetch24hOpen();
-  }, []); // Only run on mount
+  }, []);
 
   // Effect to calculate 24h price change
   useEffect(() => {

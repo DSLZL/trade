@@ -3,11 +3,9 @@ import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/Card';
 import { useBitcoinPrice } from '../hooks/useBitcoinPrice';
 import { cn } from '../lib/utils';
-import { LiveTrade } from '../types';
 
 const LiveTradeFeed: React.FC = () => {
     const { t } = useTranslation();
-    // Data now comes from the centralized context, not a local WebSocket.
     const { liveTrades, wsStatus } = useBitcoinPrice();
 
     const formatTime = (timestamp: number) => {
@@ -26,60 +24,59 @@ const LiveTradeFeed: React.FC = () => {
     }
 
     return (
-        <Card>
-            <CardHeader>
+        <Card className="h-full flex flex-col border-zinc-800 bg-zinc-900/50">
+            <CardHeader className="py-4 border-b border-zinc-800/50">
                 <div className="flex justify-between items-center">
-                    <CardTitle>{t('liveTradeFeed.title')}</CardTitle>
-                    <div className="flex items-center space-x-2">
+                    <CardTitle className="text-base">{t('liveTradeFeed.title')}</CardTitle>
+                    <div className="flex items-center space-x-2 px-2 py-1 rounded-full bg-zinc-950 border border-zinc-800">
                         <span className={cn(
-                            'h-2 w-2 rounded-full animate-pulse', 
+                            'h-2 w-2 rounded-full shadow-[0_0_8px]', 
                             { 
-                                'bg-brand-green': isConnected, 
-                                'bg-brand-red': !isConnected,
-                                'animate-none': wsStatus !== 'connecting' 
+                                'bg-brand-green shadow-brand-green/50': isConnected, 
+                                'bg-brand-red shadow-brand-red/50': !isConnected,
+                                'bg-yellow-500 shadow-yellow-500/50 animate-pulse': wsStatus === 'connecting'
                             }
                         )}></span>
-                        <span className="text-xs text-muted-foreground">{t(statusTextKey)}</span>
+                        <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">{t(statusTextKey)}</span>
                     </div>
                 </div>
             </CardHeader>
-            <CardContent>
-                <div className="max-h-[600px] lg:max-h-[calc(100vh-200px)] overflow-y-auto pr-2 -mr-2">
-                    {/* Header Row */}
-                    <div className="grid grid-cols-3 gap-2 pb-2 text-xs text-muted-foreground font-bold uppercase sticky top-0 bg-card z-10">
-                        <span className="text-left">{t('liveTradeFeed.price')}</span>
-                        <span className="text-right">{t('liveTradeFeed.amount')}</span>
-                        <span className="text-right">{t('liveTradeFeed.time')}</span>
-                    </div>
-                    {/* Trade Rows */}
-                    <div className="text-sm">
-                        {liveTrades.length === 0 && isConnected ? (
-                            <p className="text-muted-foreground text-center py-8">{t('common.waitingForTrades')}</p>
-                        ) : liveTrades.length === 0 && !isConnected ? (
-                             <p className="text-muted-foreground text-center py-8">{t('common.connecting')}</p>
-                        ) : (
-                            liveTrades.map(trade => {
-                                // A "buy" happens when a market buy order hits a limit sell (buyer is not maker)
-                                // A "sell" happens when a market sell order hits a limit buy (buyer is maker)
+            <CardContent className="flex-1 p-0 flex flex-col min-h-[400px]">
+                 <div className="grid grid-cols-3 gap-2 px-4 py-2 text-xs font-semibold text-muted-foreground bg-zinc-950/30 uppercase tracking-wider">
+                    <span className="text-left">{t('liveTradeFeed.price')}</span>
+                    <span className="text-right">{t('liveTradeFeed.amount')}</span>
+                    <span className="text-right">{t('liveTradeFeed.time')}</span>
+                </div>
+                <div className="flex-1 overflow-y-auto px-2 custom-scrollbar">
+                    {liveTrades.length === 0 && isConnected ? (
+                        <div className="flex flex-col items-center justify-center h-full text-muted-foreground space-y-2 opacity-50">
+                             <div className="w-6 h-6 border-2 border-brand-blue border-t-transparent rounded-full animate-spin"></div>
+                             <p className="text-xs">{t('common.waitingForTrades')}</p>
+                        </div>
+                    ) : liveTrades.length === 0 && !isConnected ? (
+                         <p className="text-muted-foreground text-center py-8 text-sm">{t('common.connecting')}</p>
+                    ) : (
+                        <div className="py-2 space-y-0.5">
+                            {liveTrades.map(trade => {
                                 const isBuy = !trade.isBuyerMaker;
                                 const textColor = isBuy ? 'text-brand-green' : 'text-brand-red';
                                 
                                 return (
-                                    <div key={trade.id} className="grid grid-cols-3 gap-2 py-1 font-mono">
-                                        <span className={cn('text-left', textColor)}>
+                                    <div key={trade.id} className="grid grid-cols-3 gap-2 px-2 py-1.5 text-xs font-mono rounded hover:bg-zinc-800/50 transition-colors">
+                                        <span className={cn('text-left font-semibold', textColor)}>
                                             {trade.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                         </span>
-                                        <span className="text-right">
+                                        <span className="text-right text-zinc-300">
                                             {trade.amount.toFixed(5)}
                                         </span>
-                                        <span className="text-right text-muted-foreground">
+                                        <span className="text-right text-zinc-500">
                                             {formatTime(trade.time)}
                                         </span>
                                     </div>
                                 );
-                            })
-                        )}
-                    </div>
+                            })}
+                        </div>
+                    )}
                 </div>
             </CardContent>
         </Card>

@@ -29,46 +29,40 @@ const CustomTooltip: React.FC<CustomTooltipProps> = ({ active, payload, label })
       const sign = isPositive ? '+' : '';
 
       changeElements = (
-        <div className="flex justify-between items-center pt-1 mt-1 border-t border-border">
-          <span className="text-muted-foreground">{t('priceChange.hours')} {t('priceChart.tooltip.change')}:</span>
-          <div className={`font-semibold ${changeColor} text-right`}>
+        <div className="flex justify-between items-center pt-2 mt-2 border-t border-zinc-700">
+          <span className="text-zinc-400 text-xs">{t('priceChange.hours')} {t('priceChart.tooltip.change')}:</span>
+          <div className={`font-mono font-semibold ${changeColor} text-right`}>
             <div>{`${sign}${change.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}`}</div>
-            <div className="text-xs">({`${sign}${percentChange.toFixed(2)}%`})</div>
+            <div className="text-xs opacity-80">({`${sign}${percentChange.toFixed(2)}%`})</div>
           </div>
         </div>
       );
     }
 
     return (
-      <div className="bg-popover text-popover-foreground p-3 rounded-lg border border-border shadow-lg text-sm w-56">
-        <p className="font-bold mb-2">{new Date(label).toLocaleString()}</p>
-        <div className="space-y-1">
+      <div className="bg-zinc-900/90 backdrop-blur-md text-zinc-100 p-3 rounded-lg border border-zinc-700 shadow-xl text-sm w-64 ring-1 ring-white/10">
+        <p className="font-bold mb-2 text-zinc-300 border-b border-zinc-700 pb-1">{new Date(label).toLocaleString()}</p>
+        <div className="space-y-1.5">
           <div className="flex justify-between">
-            <span className="text-muted-foreground">{t('priceChart.tooltip.price')}:</span>
-            <span className="font-semibold">{`$${currentData.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}</span>
+            <span className="text-zinc-400">{t('priceChart.tooltip.price')}:</span>
+            <span className="font-mono font-semibold text-brand-blue">{`$${currentData.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}</span>
           </div>
-          {currentData.open && (
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">{t('priceChart.tooltip.open')}:</span>
-              <span className="font-semibold">{`$${currentData.open.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}</span>
-            </div>
-          )}
           {currentData.high && (
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">{t('priceChart.tooltip.high')}:</span>
-              <span className="font-semibold">{`$${currentData.high.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}</span>
+            <div className="flex justify-between text-xs">
+              <span className="text-zinc-500">{t('priceChart.tooltip.high')}:</span>
+              <span className="font-mono">{`$${currentData.high.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}</span>
             </div>
           )}
           {currentData.low && (
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">{t('priceChart.tooltip.low')}:</span>
-              <span className="font-semibold">{`$${currentData.low.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}</span>
+            <div className="flex justify-between text-xs">
+              <span className="text-zinc-500">{t('priceChart.tooltip.low')}:</span>
+              <span className="font-mono">{`$${currentData.low.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}</span>
             </div>
           )}
            {currentData.volume && (
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">{t('priceChart.tooltip.volume')}:</span>
-              <span className="font-semibold">{`${currentData.volume.toFixed(3)} BTC`}</span>
+            <div className="flex justify-between text-xs">
+              <span className="text-zinc-500">{t('priceChart.tooltip.volume')}:</span>
+              <span className="font-mono">{`${currentData.volume.toFixed(3)} BTC`}</span>
             </div>
           )}
           {changeElements}
@@ -83,14 +77,10 @@ const PriceChart: React.FC = () => {
   const { t } = useTranslation();
   const { historicalData, loading, error, timeRange, setTimeRange } = useBitcoinPrice();
 
-  // For high-frequency data (1m), a 'step' chart provides a more accurate,
-  // raw visualization. For lower-frequency k-lines, 'linear' shows trends better.
   const lineType = timeRange === '1m' ? 'step' : 'linear';
 
   const formatXAxisTick = (tick: number) => {
     const date = new Date(tick);
-    // For the 1m real-time chart, showing seconds is crucial to differentiate
-    // between the high-frequency data points.
     if (timeRange === '1m') {
       return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     }
@@ -111,75 +101,76 @@ const PriceChart: React.FC = () => {
   ];
   
   return (
-    <div>
-      <div className="flex flex-wrap justify-end items-center mb-4 px-4 md:px-6">
-        <div className="w-full sm:w-auto flex flex-wrap justify-center sm:justify-end gap-2 mt-2 sm:mt-0">
-            {timeRanges.map(range => (
-                <Button 
-                    key={range.id} 
-                    onClick={() => setTimeRange(range.id)}
-                    variant='secondary'
-                    className={cn(
-                        "text-sm px-3 py-1",
-                        {
-                          "bg-transparent border border-primary": timeRange === range.id,
-                        }
-                    )}
-                >
-                    {range.label}
-                </Button>
-            ))}
-        </div>
+    <div className="p-4">
+      <div className="flex flex-wrap justify-end items-center mb-4 gap-2">
+          {timeRanges.map(range => (
+              <button 
+                  key={range.id} 
+                  onClick={() => setTimeRange(range.id)}
+                  className={cn(
+                      "text-xs font-medium px-3 py-1 rounded-md transition-all",
+                      timeRange === range.id 
+                        ? "bg-brand-blue text-white shadow-lg shadow-brand-blue/20" 
+                        : "text-zinc-400 hover:text-white hover:bg-zinc-800"
+                  )}
+              >
+                  {range.label}
+              </button>
+          ))}
       </div>
       
       {/* Main Chart */}
-      <div className="w-full h-[220px] md:h-[280px]">
+      <div className="w-full h-[240px] md:h-[300px]">
         {loading ? (
-          <div className="flex justify-center items-center h-full text-gray-400">{t('priceChart.loading')}</div>
+          <div className="flex justify-center items-center h-full text-zinc-500 text-sm animate-pulse">{t('priceChart.loading')}</div>
         ) : error ? (
-          <div className="flex justify-center items-center h-full text-red-500">{error}</div>
+          <div className="flex justify-center items-center h-full text-brand-red text-sm">{error}</div>
         ) : (
           <ResponsiveContainer>
-            <AreaChart data={historicalData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+            <AreaChart data={historicalData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
               <defs>
                   <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="hsl(var(--brand-blue-hsl))" stopOpacity={0.4}/>
-                      <stop offset="95%" stopColor="hsl(var(--brand-blue-hsl))" stopOpacity={0}/>
+                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
                   </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
               <XAxis 
                 dataKey="timestamp" 
                 type="number"
                 domain={['dataMin', 'dataMax']}
                 tickFormatter={formatXAxisTick}
-                stroke="hsl(var(--muted-foreground))"
+                stroke="#52525b"
+                tick={{fontSize: 11}}
+                tickLine={false}
+                axisLine={false}
+                minTickGap={30}
               />
               <YAxis 
                 tickFormatter={(price) => `$${price.toLocaleString()}`}
-                stroke="hsl(var(--muted-foreground))"
+                stroke="#52525b"
                 domain={['auto', 'auto']}
-                width={80} // Give Y-Axis ample space
+                tick={{fontSize: 11}}
+                tickLine={false}
+                axisLine={false}
               />
               <Tooltip 
                 content={<CustomTooltip />} 
-                isAnimationActive={false}
+                cursor={{ stroke: '#52525b', strokeWidth: 1, strokeDasharray: '4 4' }}
               />
               <Area 
                 isAnimationActive={false}
                 type={lineType} 
                 dataKey="price" 
-                stroke="hsl(var(--brand-blue-hsl))" 
+                stroke="#3b82f6" 
                 strokeWidth={2} 
                 fill="url(#chartGradient)"
-                dot={false}
-                activeDot={{ r: 5, strokeWidth: 1, fill: 'hsl(var(--brand-blue-hsl))', stroke: 'hsl(var(--foreground))' }}
+                activeDot={{ r: 6, strokeWidth: 0, fill: '#fff' }}
               />
             </AreaChart>
           </ResponsiveContainer>
         )}
       </div>
-
     </div>
   );
 };

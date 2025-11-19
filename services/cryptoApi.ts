@@ -1,5 +1,3 @@
-
-
 import { API_BASE_URL, BITCOIN_ID } from '../constants';
 import { BinanceTicker, BinanceKline, PriceDataPoint, BinanceAggTrade, Binance24hTicker } from '../types';
 
@@ -101,7 +99,7 @@ export const fetchHistoricalData = async (range: string = '7d'): Promise<PriceDa
 
     const response = await fetch(`${API_BASE_URL}/api/v3/klines?symbol=${BITCOIN_ID}&interval=${interval}&limit=${limit}`);
     if (!response.ok) {
-      throw new Error('Network response was not ok for historical data');
+      throw new Error(`Network response was not ok for historical data (${range})`);
     }
     const data: BinanceKline[] = await response.json();
     
@@ -118,6 +116,7 @@ export const fetchHistoricalData = async (range: string = '7d'): Promise<PriceDa
   } catch (error)
  {
     console.error("Failed to fetch historical data:", error);
-    throw error;
+    // Return empty array instead of crashing the component
+    return []; 
   }
 };

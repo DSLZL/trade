@@ -5,9 +5,6 @@ import { getPortfolio, savePortfolio } from '../services/db';
 
 interface Notification {
   messageKey: string;
-  // Fix: Changed payload type from `object` to `Record<string, any>`.
-  // The `i18next` `t` function requires an object with a string index signature for interpolation.
-  // The generic `object` type does not have this, which was causing a TypeScript error.
   payload?: Record<string, any>;
   type: 'success' | 'error' | 'warning';
 }
@@ -24,7 +21,11 @@ interface PortfolioContextType {
 
 const PortfolioContext = createContext<PortfolioContextType | undefined>(undefined);
 
-// FIX: Changed component signature to use React.FC to fix typing issue in App.tsx
+// Helper for USD precision (2 decimals)
+const roundUsd = (amount: number) => Math.round(amount * 100) / 100;
+// Helper for BTC precision (8 decimals)
+const roundBtc = (amount: number) => Math.round(amount * 100000000) / 100000000;
+
 export const PortfolioProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [portfolio, setPortfolio] = useState<Portfolio>({
     usdBalance: INITIAL_USD_BALANCE,
@@ -43,11 +44,8 @@ export const PortfolioProvider: React.FC<{ children: ReactNode }> = ({ children 
       try {
         const savedPortfolio = await getPortfolio();
         if (savedPortfolio) {
-          // BUG FIX: Date object reconstruction is now handled by the getPortfolio service.
-          // This simplifies the hook and improves separation of concerns.
           setPortfolio(savedPortfolio);
         }
-        // If no saved portfolio, the default initial state will be used and subsequently saved.
       } catch (error) {
         console.error("Failed to load portfolio from IndexedDB:", error);
       } finally {
@@ -56,12 +54,10 @@ export const PortfolioProvider: React.FC<{ children: ReactNode }> = ({ children 
     };
 
     loadData();
-  }, []); // Empty dependency array ensures this runs only once.
+  }, []);
 
   // Save portfolio to IndexedDB whenever it changes.
   useEffect(() => {
-    // Do not save the initial default state before attempting to load from the DB.
-    // The `hasLoaded` ref ensures we only start persisting after the load attempt is complete.
     if (!hasLoaded.current) {
       return;
     }
@@ -78,19 +74,24 @@ export const PortfolioProvider: React.FC<{ children: ReactNode }> = ({ children 
   const buyBtc = useCallback((usdAmount: number, currentPrice: number) => {
     if (usdAmount <= 0) return;
 
-    const btcToBuy = usdAmount / currentPrice;
+    // Use precise math for checking balance
+    const safeUsdAmount = roundUsd(usdAmount);
+
     setPortfolio(prev => {
-      if (prev.usdBalance < usdAmount) {
+      // Floating point safety check
+      if (roundUsd(prev.usdBalance) < safeUsdAmount) {
         setNotification({ messageKey: 'notifications.insufficientUsd', type: 'error' });
         return prev;
       }
+
+      const btcToBuy = roundBtc(safeUsdAmount / currentPrice);
 
       const newTransaction: Transaction = {
         id: new Date().toISOString() + Math.random(),
         type: TransactionType.BUY,
         date: new Date(),
         btcAmount: btcToBuy,
-        usdAmount,
+        usdAmount: safeUsdAmount,
         priceAtTransaction: currentPrice,
       };
 
@@ -102,8 +103,8 @@ export const PortfolioProvider: React.FC<{ children: ReactNode }> = ({ children 
 
       return {
         ...prev,
-        usdBalance: prev.usdBalance - usdAmount,
-        btcBalance: prev.btcBalance + btcToBuy,
+        usdBalance: roundUsd(prev.usdBalance - safeUsdAmount),
+        btcBalance: roundBtc(prev.btcBalance + btcToBuy),
         transactions: [newTransaction, ...prev.transactions],
       };
     });
@@ -112,32 +113,35 @@ export const PortfolioProvider: React.FC<{ children: ReactNode }> = ({ children 
   const sellBtc = useCallback((btcAmount: number, currentPrice: number) => {
     if (btcAmount <= 0) return;
 
-    const usdToGain = btcAmount * currentPrice;
+    const safeBtcAmount = roundBtc(btcAmount);
+
     setPortfolio(prev => {
-      if (prev.btcBalance < btcAmount) {
+      if (roundBtc(prev.btcBalance) < safeBtcAmount) {
         setNotification({ messageKey: 'notifications.insufficientBtc', type: 'error' });
         return prev;
       }
+
+      const usdToGain = roundUsd(safeBtcAmount * currentPrice);
 
       const newTransaction: Transaction = {
         id: new Date().toISOString() + Math.random(),
         type: TransactionType.SELL,
         date: new Date(),
-        btcAmount,
+        btcAmount: safeBtcAmount,
         usdAmount: usdToGain,
         priceAtTransaction: currentPrice,
       };
 
       setNotification({
         messageKey: 'notifications.sellSuccess',
-        payload: { amount: btcAmount.toFixed(8), currency: 'BTC' },
+        payload: { amount: safeBtcAmount.toFixed(8), currency: 'BTC' },
         type: 'success',
       });
 
       return {
         ...prev,
-        btcBalance: prev.btcBalance - btcAmount,
-        usdBalance: prev.usdBalance + usdToGain,
+        btcBalance: roundBtc(prev.btcBalance - safeBtcAmount),
+        usdBalance: roundUsd(prev.usdBalance + usdToGain),
         transactions: [newTransaction, ...prev.transactions],
       };
     });
@@ -150,10 +154,12 @@ export const PortfolioProvider: React.FC<{ children: ReactNode }> = ({ children 
             return prev;
         }
 
-        const ownedUsd = prev.usdBalance;
-        const maxLoan = ownedUsd * MAX_LOAN_MULTIPLIER;
+        const ownedUsd = roundUsd(prev.usdBalance);
+        const maxLoan = roundUsd(ownedUsd * MAX_LOAN_MULTIPLIER);
+        const safeAmount = roundUsd(amount);
 
-        if (amount <= 0 || amount > maxLoan) {
+        // Allow a small epsilon for float comparison error on max check
+        if (safeAmount <= 0 || safeAmount > (maxLoan + 0.01)) {
             setNotification({ messageKey: 'bank.notifications.loanTooHigh', type: 'error' });
             return prev;
         }
@@ -163,7 +169,7 @@ export const PortfolioProvider: React.FC<{ children: ReactNode }> = ({ children 
         dueDate.setDate(dueDate.getDate() + periodDays);
 
         const newLoan: Loan = {
-            principal: amount,
+            principal: safeAmount,
             interestRate: LOAN_APR,
             loanDate,
             dueDate,
@@ -172,13 +178,13 @@ export const PortfolioProvider: React.FC<{ children: ReactNode }> = ({ children 
 
         setNotification({
             messageKey: 'bank.notifications.loanTaken',
-            payload: { amount: amount.toLocaleString('en-US', { style: 'currency', currency: 'USD' }) },
+            payload: { amount: safeAmount.toLocaleString('en-US', { style: 'currency', currency: 'USD' }) },
             type: 'success',
         });
 
         return {
             ...prev,
-            usdBalance: prev.usdBalance + amount,
+            usdBalance: roundUsd(prev.usdBalance + safeAmount),
             loan: newLoan,
         };
     });
@@ -191,12 +197,12 @@ export const PortfolioProvider: React.FC<{ children: ReactNode }> = ({ children 
         const daysPassed = (new Date().getTime() - prev.loan.loanDate.getTime()) / (1000 * 3600 * 24);
         const yearsPassed = daysPassed / 365;
         const interest = prev.loan.principal * prev.loan.interestRate * yearsPassed;
-        let totalRepayment = prev.loan.principal + interest;
+        
+        // Calculate total and round strictly to cents
+        const totalRepayment = roundUsd(prev.loan.principal + interest);
 
-        // Round to the nearest cent for financial accuracy
-        totalRepayment = Math.round(totalRepayment * 100) / 100;
-
-        if (prev.usdBalance < totalRepayment) {
+        // Comparison with slight epsilon tolerance for floating point oddities
+        if (roundUsd(prev.usdBalance) < totalRepayment) {
             setNotification({ messageKey: 'bank.notifications.repayInsufficientFunds', type: 'error' });
             return prev;
         }
@@ -208,7 +214,7 @@ export const PortfolioProvider: React.FC<{ children: ReactNode }> = ({ children 
 
         return {
             ...prev,
-            usdBalance: prev.usdBalance - totalRepayment,
+            usdBalance: roundUsd(prev.usdBalance - totalRepayment),
             loan: null,
         };
     });
@@ -222,13 +228,8 @@ export const PortfolioProvider: React.FC<{ children: ReactNode }> = ({ children 
         const interest = prev.loan.principal * prev.loan.interestRate * years;
         let totalDueAtTerm = prev.loan.principal + interest;
         
-        // Round due amount to the nearest cent first
-        totalDueAtTerm = Math.round(totalDueAtTerm * 100) / 100;
-
-        let penaltyAmount = totalDueAtTerm * 1.25;
-        // Round the final penalty amount to the nearest cent
-        penaltyAmount = Math.round(penaltyAmount * 100) / 100;
-
+        totalDueAtTerm = roundUsd(totalDueAtTerm);
+        const penaltyAmount = roundUsd(totalDueAtTerm * 1.25);
 
         setNotification({
             messageKey: 'bank.notifications.loanOverduePenalty',
@@ -238,22 +239,20 @@ export const PortfolioProvider: React.FC<{ children: ReactNode }> = ({ children 
 
         return {
             ...prev,
-            usdBalance: prev.usdBalance - penaltyAmount,
+            usdBalance: roundUsd(prev.usdBalance - penaltyAmount),
             loan: null,
         };
     });
   }, []);
 
-  // Effect for checking loan status (due date reminders and penalties)
+  // Effect for checking loan status
   useEffect(() => {
     if (!portfolio.loan) {
-        dueSoonNotified.current = false; // Reset flag when loan is cleared
+        dueSoonNotified.current = false;
         return;
     }
 
     const checkLoanStatus = () => {
-        // This function will check the current loan from the component's state.
-        // The effect dependency on `portfolio.loan` ensures we always have the latest loan data.
         const loan = portfolio.loan;
         if (!loan) return;
 
@@ -262,7 +261,7 @@ export const PortfolioProvider: React.FC<{ children: ReactNode }> = ({ children 
 
         // Check if overdue
         if (now > dueDate) {
-            applyLoanPenalty(); // This will clear the loan and trigger effect cleanup
+            applyLoanPenalty();
             return;
         }
 
@@ -271,7 +270,7 @@ export const PortfolioProvider: React.FC<{ children: ReactNode }> = ({ children 
         const oneDayInMillis = 24 * 60 * 60 * 1000;
 
         if (timeUntilDue > 0 && timeUntilDue < oneDayInMillis && !dueSoonNotified.current) {
-            dueSoonNotified.current = true; // Set flag to prevent repeated notifications
+            dueSoonNotified.current = true;
             setNotification({
                 messageKey: 'bank.notifications.loanDueSoon',
                 type: 'warning',
@@ -279,11 +278,9 @@ export const PortfolioProvider: React.FC<{ children: ReactNode }> = ({ children 
         }
     };
     
-    // Check status immediately when the loan data changes, then set an interval
     checkLoanStatus();
-    const intervalId = setInterval(checkLoanStatus, 60 * 1000); // Check every minute
+    const intervalId = setInterval(checkLoanStatus, 60 * 1000);
 
-    // Cleanup function: this runs when the component unmounts or when portfolio.loan changes
     return () => {
         clearInterval(intervalId);
     };
@@ -292,8 +289,6 @@ export const PortfolioProvider: React.FC<{ children: ReactNode }> = ({ children 
 
   const value = useMemo(() => ({ portfolio, buyBtc, sellBtc, takeLoan, repayLoan, notification, clearNotification }), [portfolio, buyBtc, sellBtc, takeLoan, repayLoan, notification, clearNotification]);
 
-  // Note: Using React.createElement is necessary here because this is a .ts file,
-  // not a .tsx file, and therefore does not support JSX syntax.
   return React.createElement(PortfolioContext.Provider, { value: value }, children);
 };
 

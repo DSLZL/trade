@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
@@ -8,31 +8,68 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
       :root {
-        --background: 222 47% 11%;
-        --foreground: 210 40% 96%;
-        --card: 222 47% 16%;
-        --card-foreground: 210 40% 96%;
-        --popover: 222 47% 16%;
-        --popover-foreground: 210 40% 96%;
-        --primary: 210 40% 96%;
-        --primary-foreground: 222 47% 11%;
-        --secondary: 215 28% 24%;
-        --secondary-foreground: 210 40% 96%;
-        --muted: 215 28% 24%;
-        --muted-foreground: 215 20% 65%;
-        --accent: 215 28% 24%;
-        --accent-foreground: 210 40% 96%;
-        --destructive: 0 63% 31%;
-        --destructive-foreground: 210 40% 96%;
-        --border: 215 28% 24%;
-        --input: 215 28% 24%;
-        --ring: 212.7 26.8% 83.9%;
-        --radius: 0.5rem;
-        --brand-blue-hsl: 207 65% 53%; /* #3182CE */
+        /* Zinc-950 based dark theme */
+        --background: 240 10% 3.9%; /* #09090b */
+        --foreground: 0 0% 98%; /* #fafafa */
+        
+        --card: 240 10% 3.9%;
+        --card-foreground: 0 0% 98%;
+        
+        --popover: 240 10% 3.9%;
+        --popover-foreground: 0 0% 98%;
+        
+        --primary: 0 0% 98%;
+        --primary-foreground: 240 5.9% 10%;
+        
+        --secondary: 240 3.7% 15.9%;
+        --secondary-foreground: 0 0% 98%;
+        
+        --muted: 240 3.7% 15.9%;
+        --muted-foreground: 240 5% 64.9%;
+        
+        --accent: 240 3.7% 15.9%;
+        --accent-foreground: 0 0% 98%;
+        
+        --destructive: 0 62.8% 30.6%;
+        --destructive-foreground: 0 0% 98%;
+        
+        --border: 240 3.7% 15.9%;
+        --input: 240 3.7% 15.9%;
+        --ring: 240 4.9% 83.9%;
+        
+        --radius: 0.75rem;
+        
+        /* Brand colors */
+        --brand-blue-hsl: 217 91% 60%; /* #3b82f6 */
+      }
+      
+      body {
+        background-color: hsl(var(--background));
+        color: hsl(var(--foreground));
+        /* Subtle background pattern */
+        background-image: radial-gradient(circle at 50% 0%, hsl(240 3.7% 15.9% / 0.3), transparent 70%);
+        min-height: 100vh;
+      }
+
+      /* Custom Scrollbar */
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: hsl(var(--muted-foreground) / 0.3);
+        border-radius: 4px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: hsl(var(--muted-foreground) / 0.5);
       }
     </style>
     <script>
       tailwind.config = {
+        darkMode: 'class',
         theme: {
           container: {
             center: true,
@@ -76,29 +113,18 @@
                 DEFAULT: "hsl(var(--card))",
                 foreground: "hsl(var(--card-foreground))",
               },
-              'brand-blue': '#3182CE',
-              'brand-green': '#38A169',
-              'brand-red': '#E53E3E',
+              'brand-blue': '#3b82f6',
+              'brand-green': '#10b981',
+              'brand-red': '#ef4444',
             },
             borderRadius: {
               lg: "var(--radius)",
               md: "calc(var(--radius) - 2px)",
               sm: "calc(var(--radius) - 4px)",
             },
-            keyframes: {
-              "accordion-down": {
-                from: { height: 0 },
-                to: { height: "var(--radix-accordion-content-height)" },
-              },
-              "accordion-up": {
-                from: { height: "var(--radix-accordion-content-height)" },
-                to: { height: 0 },
-              },
-            },
-            animation: {
-              "accordion-down": "accordion-down 0.2s ease-out",
-              "accordion-up": "accordion-up 0.2s ease-out",
-            },
+            boxShadow: {
+                'glow': '0 0 20px -5px var(--tw-shadow-color)',
+            }
           },
         },
       }
@@ -118,7 +144,7 @@
 }
 </script>
 </head>
-  <body class="bg-background text-foreground">
+  <body class="bg-background text-foreground antialiased">
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
   </body>
