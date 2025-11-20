@@ -158,8 +158,8 @@ export const PortfolioProvider: React.FC<{ children: ReactNode }> = ({ children 
         const maxLoan = roundUsd(ownedUsd * MAX_LOAN_MULTIPLIER);
         const safeAmount = roundUsd(amount);
 
-        // Allow a small epsilon for float comparison error on max check
-        if (safeAmount <= 0 || safeAmount > (maxLoan + 0.01)) {
+        // STRICT CHECK: Ensure requested amount does not exceed the calculated limit.
+        if (safeAmount <= 0 || safeAmount > maxLoan) {
             setNotification({ messageKey: 'bank.notifications.loanTooHigh', type: 'error' });
             return prev;
         }

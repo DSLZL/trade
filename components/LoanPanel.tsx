@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { usePortfolio } from '../hooks/usePortfolio';
 import { useTranslation } from 'react-i18next';
@@ -15,7 +14,8 @@ const LoanPanel: React.FC = () => {
   const [period, setPeriod] = useState(7); // Default to 7 days
   const [repaymentAmount, setRepaymentAmount] = useState(0);
 
-  const ownedUsd = portfolio.loan ? portfolio.usdBalance - portfolio.loan.principal : portfolio.usdBalance;
+  // In the "Take Loan" view, portfolio.loan is null, so ownedUsd is just the balance.
+  const ownedUsd = portfolio.usdBalance;
   const maxLoan = ownedUsd * MAX_LOAN_MULTIPLIER;
 
   const numericAmount = parseFloat(amount);
@@ -127,8 +127,19 @@ const LoanPanel: React.FC = () => {
         
         <div className="space-y-2">
             <label htmlFor="loan-amount" className="text-sm font-medium">{t('bank.loanAmount')}</label>
-            <Input id="loan-amount" type="text" value={amount} onChange={handleAmountChange} placeholder="0.00" />
-            {exceedsMax && <p className="text-sm text-brand-red">{t('bank.notifications.loanTooHigh')}</p>}
+            <Input 
+                id="loan-amount" 
+                type="text" 
+                value={amount} 
+                onChange={handleAmountChange} 
+                placeholder="0.00"
+                className={cn(exceedsMax && "border-brand-red focus-visible:ring-brand-red/50 focus-visible:border-brand-red/50")}
+            />
+            {exceedsMax && (
+                <p className="text-sm text-brand-red">
+                    {t('bank.notifications.loanTooHigh')} ({maxLoan.toLocaleString('en-US', { style: 'currency', currency: 'USD' })})
+                </p>
+            )}
         </div>
 
         <div className="space-y-2">
